@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "hoomepage":" minimalpokedex.github.io",
+  "hoomepage": " minimalpokedex.github.io",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@heroicons/react": "^2.1.1",
     "autoprefixer": "^10.4.17",
     "postcss": "^8.4.34",
     "react": "^18.2.0",
