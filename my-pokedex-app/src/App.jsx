@@ -3,19 +3,19 @@ import React, { useState, useEffect, useMemo } from 'react';
 import GenerationDropdown from './GenerationDropdown';
 import PokemonList from './PokemonList';
 import PokemonDetails from './PokemonDetails';
+import SkeletonLoader from './SkeletalLoader';
 
-function App() {
-  const [generation, setGeneration] = useState(1);
-  const [offsets, setOffsets] = useState({}); // Object to store offsets by generation
+function useGenerationOffsets(gen) {
+  const [offsets, setOffsets] = useState({});
   const [generationData, setGenerationData] = useState({});
-  const [selectedPokemon, setSelectedPokemon] = useState(null);
 
   useEffect(() => {
     const fetchAllOffsets = async () => {
       const generationsToFetch = Array.from({ length: 9 }, (_, i) => i + 1);
-      let cumulativeOffset = 0; // Track offsets across generations
-      
-      const offsetData = await Promise.all(generationsToFetch.map(async (gen) => {
+      let cumulativeOffset = 0;
+      const offsetData = [];
+
+      for (const gen of generationsToFetch) {
         const response = await fetch(`https://pokeapi.co/api/v2/generation/${gen}`);
         const generationData = await response.json();
 
@@ -23,33 +23,34 @@ function App() {
           generation: gen,
           startingOffset: cumulativeOffset,
           maxOffset: cumulativeOffset + generationData.pokemon_species.length,
-          genData: generationData
+          genData: generationData,
         };
 
-        cumulativeOffset = result.maxOffset; // Update for the next generation's starting offset
-
-        return result;
-      }));
+        offsetData.push(result);
+        cumulativeOffset = result.maxOffset;
+      }
 
       setOffsets(offsetData.reduce((acc, data) => ({
         ...acc,
-        [data.generation]: [data.startingOffset, data.maxOffset]
+        [data.generation]: [data.startingOffset, data.maxOffset],
       }), {}));
 
       setGenerationData(offsetData.reduce((acc, data) => ({
         ...acc,
-        [data.generation]: [data.genData]
+        [data.generation]: [data.genData],
       }), {}));
-
     };
 
     fetchAllOffsets();
-  }, []);
+  }, [gen]);
 
-  useEffect(() => {
-    console.log(generationData)
-  }, [generationData])
+  return [offsets, generationData];
+}
 
+function App() {
+  const [generation, setGeneration] = useState(1);
+  const [offsets, generationData] = useGenerationOffsets(generation);
+  const [selectedPokemon, setSelectedPokemon] = useState(null);
   const generationOffsets = useMemo(() => offsets[generation] || [], [offsets, generation]);
 
   return (
@@ -67,21 +68,25 @@ function App() {
           }
         </div>
 
-        {
-          generationOffsets.length > 0 &&
-          <div className='flex flex-row overflow-y-hidden'>
-            <PokemonList
-              height="fit-content"
-              key={generation}
-              startingOffset={generationOffsets[0]}
-              maxOffset={generationOffsets[1]}
-              setSelectedPokemon={setSelectedPokemon}
-            />
+        <div className='flex flex-row overflow-y-hidden'>
+          {
+            generationOffsets.length > 0 ?
+              <PokemonList
+                height="fit-content"
+                key={generation}
+                startingOffset={generationOffsets[0]}
+                maxOffset={generationOffsets[1]}
+                setSelectedPokemon={setSelectedPokemon}
+              />
+              :
+              <SkeletonLoader/>
+            }
             <div className="w-2/3 p-4">
               <PokemonDetails pokemon={selectedPokemon} />
             </div>
           </div>
-        }
+
+
       </div>
     </div>
   );

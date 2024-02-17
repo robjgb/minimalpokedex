@@ -112,7 +112,7 @@ function PokemonDetails({ pokemon }) {
           <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
             <dt className="font-medium text-gray-900">types</dt>
             <dd className="text-gray-700 sm:col-span-2 flex">{pokemonData.types.map(type =>
-              <div className='flex me-4 p-2 rounded' style={{ backgroundColor: typeColors[type.type.name] }}>
+              <div key={type.type.name} className='flex me-4 p-2 rounded' style={{ backgroundColor: typeColors[type.type.name] }}>
                 <img
                   key={type.type.name}
                   src={getTypeIconURL(type.type.name)}

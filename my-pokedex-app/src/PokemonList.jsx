@@ -1,5 +1,6 @@
 // PokemonList.jsx
 import React, { useState, useEffect, useRef } from 'react';
+import SkeletonLoader from './SkeletalLoader';
 
 function PokemonList({ startingOffset, maxOffset, setSelectedPokemon}) {
   const [offset, setOffset] = useState(startingOffset);
@@ -105,7 +106,7 @@ function PokemonList({ startingOffset, maxOffset, setSelectedPokemon}) {
         })}
       </ul>
       
-      {loading && <p className="text-gray-500">Loading more Pokémon...</p>}
+      {loading && <SkeletonLoader/>}
     </div>
   );
 }
