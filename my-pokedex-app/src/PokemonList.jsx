@@ -2,10 +2,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import SkeletonLoader from './SkeletalLoader';
 
-function PokemonList({ startingOffset, maxOffset, setSelectedPokemon}) {
+function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
   const [offset, setOffset] = useState(startingOffset);
   const [pokemonData, setPokemonData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedPokemon, setSelectedPokemon] = useState(null);
   const listRef = useRef(null);
 
   useEffect(() => {
@@ -77,7 +78,12 @@ function PokemonList({ startingOffset, maxOffset, setSelectedPokemon}) {
           const name = pokemon.name;
           
           return (
-            <li key={id} onClick={() => setSelectedPokemon(pokemon)} className="cursor-pointer relative">
+            <li key={id}   
+            onClick={() => {
+              setSelectedPokemon(pokemon);
+              navigate(`/gen/${generation}/${id}`); // Update the URL
+            }}
+             className="cursor-pointer relative">
               
               <span className="absolute inset-0 border-2 border-dashed border-gray-100 rounded-lg"></span>
 

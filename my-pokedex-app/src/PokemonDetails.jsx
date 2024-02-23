@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { SpeakerWaveIcon } from '@heroicons/react/24/outline';
+import { useParams } from 'react-router-dom';
+import DetailsLoader from './DetailsLoader';
 
-function PokemonDetails({ pokemon }) {
+function PokemonDetails() {
   const [pokemonData, setPokemonData] = useState(null);
   const [speciesData, setSpeciesData] = useState(null);
   const getTypeIconURL = (type) => `https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/${type}.svg`;
   const [audioSrc, setAudioSrc] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = React.createRef();
+  const { pokeId } = useParams();
+  const [isLoading, setIsLoading] = useState(false);
   const typeColors = {
     normal: '#A8A878',
     fire: '#F08030',
@@ -34,8 +38,9 @@ function PokemonDetails({ pokemon }) {
     setIsPlaying(false);
 
     const fetchPokemonDetails = async () => {
-      if (!pokemon) return;
-      const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemon.url.split('/')[6]}`);
+      if (!pokeId) return
+      setIsLoading(true);
+      const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokeId}`);
       const pokemonData = await response.json();
       setPokemonData(pokemonData);
 
@@ -44,10 +49,11 @@ function PokemonDetails({ pokemon }) {
       setSpeciesData(speciesData);
 
       setAudioSrc(pokemonData?.cries?.latest);
+      setIsLoading(false); 
     };
 
     fetchPokemonDetails();
-  }, [pokemon]);
+  }, [pokeId]);
 
   useEffect(() => {
     // Clear isPlaying when audio ends
@@ -67,9 +73,13 @@ function PokemonDetails({ pokemon }) {
     }
   };
 
-  if (!pokemonData) return <p className='text-gray-600 hover:bg-gray-50 hover:text-gray-700'>select a pokémon to view details</p>
+  if (!pokemonData || !pokeId) return <p className='text-gray-600 hover:bg-gray-50 hover:text-gray-700'>select a pokémon to view details</p>
 
   return (
+    <div>
+    {isLoading ? (
+      <DetailsLoader />  
+    ) : (
     <div className='p-4'>
       <div className="flex items-center mb-4">
         <h2 className="text-2xl font-bold text-gray-800 mr-4">{pokemonData.name}</h2>
@@ -126,6 +136,8 @@ function PokemonDetails({ pokemon }) {
           </div>
         </dl>
       </div>
+    </div>
+    )}
     </div>
   );
 }

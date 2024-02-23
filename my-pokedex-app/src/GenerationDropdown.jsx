@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function GenerationDropdown({ generation, setGeneration, maxOffset }) {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
 
   const handleGenerationClick = (gen) => {
     setGeneration(gen);
     setOpen(false);
+    navigate(`/gen/${gen}`);
   };
 
   return (

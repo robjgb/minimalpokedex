@@ -4,14 +4,21 @@ import GenerationDropdown from './GenerationDropdown';
 import PokemonList from './PokemonList';
 import PokemonDetails from './PokemonDetails';
 import SkeletonLoader from './SkeletalLoader';
+import { useNavigate, useParams } from 'react-router-dom';
 
-function useGenerationOffsets(gen) {
+function useGenerationOffsets() {
   const [offsets, setOffsets] = useState({});
   const [generationData, setGenerationData] = useState({});
+  const [totalGenerations, setTotalGenerations] = useState(null);
+  const [totalPokemon, setTotalPokemon] = useState(null);
 
   useEffect(() => {
     const fetchAllOffsets = async () => {
-      const generationsToFetch = Array.from({ length: 9 }, (_, i) => i + 1);
+      const response = await fetch('https://pokeapi.co/api/v2/generation/');
+      const data = await response.json();
+      setTotalGenerations(data.count);
+
+      const generationsToFetch = Array.from({ length: data.count }, (_, i) => i + 1);
       let cumulativeOffset = 0;
       const offsetData = [];
 
@@ -29,7 +36,6 @@ function useGenerationOffsets(gen) {
         offsetData.push(result);
         cumulativeOffset = result.maxOffset;
       }
-
       setOffsets(offsetData.reduce((acc, data) => ({
         ...acc,
         [data.generation]: [data.startingOffset, data.maxOffset],
@@ -39,19 +45,53 @@ function useGenerationOffsets(gen) {
         ...acc,
         [data.generation]: [data.genData],
       }), {}));
+      setTotalPokemon(cumulativeOffset);
     };
 
     fetchAllOffsets();
-  }, [gen]);
+  }, []);
 
-  return [offsets, generationData];
+  return [offsets, generationData, totalGenerations, totalPokemon];
 }
 
 function App() {
   const [generation, setGeneration] = useState(1);
-  const [offsets, generationData] = useGenerationOffsets(generation);
-  const [selectedPokemon, setSelectedPokemon] = useState(null);
+  const [offsets, generationData, totalGenerations, totalPokemon] = useGenerationOffsets();
   const generationOffsets = useMemo(() => offsets[generation] || [], [offsets, generation]);
+  const { pokeId } = useParams();
+  const { genId } = useParams();
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    if(totalPokemon){
+      if ((pokeId) && (pokeId < 1 || pokeId > totalPokemon || isNaN(Number(pokeId)))) {
+        throw new Response("Invalid Pokemon ID", { status: 404, statusText: "Invalid Pokemon ID" });
+      }
+      else if((genId && pokeId && generationOffsets) && (pokeId <= generationOffsets[0]|| pokeId > generationOffsets[1])){
+        throw new Response("Pokemon ID out of range for the specified generation", { status: 404, statusText: "Pokemon ID out of range for the specified generation" });
+      }
+      else if(pokeId == undefined){
+        return
+      }
+      else{
+        
+      }
+    }
+  }, [pokeId, totalPokemon, genId]);
+  
+  useEffect(() => {
+    if(totalGenerations){
+      if ((genId) && (genId < 1 || genId > totalGenerations || isNaN(Number(genId)))) {
+        throw new Response("Invalid Generation ID", { status: 404, statusText: "Invalid Generation ID" });
+      } 
+      else if (genId === undefined){
+        return
+      }
+      else{
+        setGeneration(genId)
+      }
+    }
+  }, [genId, totalGenerations]);
 
   return (
     <div className="container mx-auto h-screen">
@@ -76,13 +116,14 @@ function App() {
                 key={generation}
                 startingOffset={generationOffsets[0]}
                 maxOffset={generationOffsets[1]}
-                setSelectedPokemon={setSelectedPokemon}
+                navigate={navigate}
+                generation={generation}
               />
               :
               <SkeletonLoader/>
             }
             <div className="w-2/3 p-4">
-              <PokemonDetails pokemon={selectedPokemon} />
+              <PokemonDetails/>
             </div>
           </div>
 
