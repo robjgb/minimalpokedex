@@ -1,6 +1,7 @@
 // PokemonList.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import SkeletonLoader from './SkeletalLoader';
+import { useParams } from 'react-router-dom';
 
 function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
   const [offset, setOffset] = useState(startingOffset);
@@ -8,6 +9,19 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
   const [loading, setLoading] = useState(false);
   const [selectedPokemon, setSelectedPokemon] = useState(null);
   const listRef = useRef(null);
+  const selectedPokemonRef = useRef(null);
+  const { pokeId } = useParams();
+
+  useEffect(() => {
+    if (pokeId) {
+      const selectedPokemon = pokemonData.find(pokemon => pokemon.url.split('/')[6] === pokeId);
+      if (selectedPokemon) {
+        setSelectedPokemon(selectedPokemon);
+      } else {
+        loadMorePokemon();
+      }
+    }
+  }, [pokeId, pokemonData]);
 
   useEffect(() => {
       setOffset(startingOffset); // Reset offset only when startingOffset changes
@@ -70,6 +84,18 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
       }
     };  }, [debouncedHandleScroll, listRef]);
 
+  const scrollToSelectedPokemon = () => {
+    if (selectedPokemonRef.current) {  
+      selectedPokemonRef.current.scrollIntoView({ behavior: "smooth" });
+    } 
+  };
+
+  useEffect(() => {
+    if (selectedPokemon) {
+      scrollToSelectedPokemon();
+    }
+  }, [selectedPokemon]);
+
   return (
     <div className="w-1/3 overflow-y-auto" ref={listRef}>
       <ul className="p-2">
@@ -83,6 +109,7 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
               setSelectedPokemon(pokemon);
               navigate(`/gen/${generation}/${id}`); // Update the URL
             }}
+             ref={selectedPokemon === pokemon ? selectedPokemonRef : null}
              className="cursor-pointer relative">
               
               <span className="absolute inset-0 border-2 border-dashed border-gray-100 rounded-lg"></span>

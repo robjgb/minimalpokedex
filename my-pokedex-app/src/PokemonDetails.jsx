@@ -42,10 +42,12 @@ function PokemonDetails() {
       setIsLoading(true);
       const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokeId}`);
       const pokemonData = await response.json();
+      console.log(pokemonData)
       setPokemonData(pokemonData);
 
       const speciesResponse = await fetch(pokemonData.species.url);
       const speciesData = await speciesResponse.json();
+      console.log(speciesData)
       setSpeciesData(speciesData);
 
       setAudioSrc(pokemonData?.cries?.latest);
@@ -80,7 +82,7 @@ function PokemonDetails() {
     {isLoading ? (
       <DetailsLoader />  
     ) : (
-    <div className='p-4'>
+    <div className='p-4 overflow-scroll'>
       <div className="flex items-center mb-4">
         <h2 className="text-2xl font-bold text-gray-800 mr-4">{pokemonData.name}</h2>
         {audioSrc && (
@@ -110,16 +112,6 @@ function PokemonDetails() {
           }
 
           <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-            <dt className="font-medium text-gray-900">height</dt>
-            <dd className="text-gray-700 sm:col-span-2">{(pokemonData.height * 0.1).toFixed(2)} meters</dd>
-          </div>
-
-          <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-            <dt className="font-medium text-gray-900">weight</dt>
-            <dd className="text-gray-700 sm:col-span-2">{(pokemonData.weight * 0.1).toFixed(2)} kilograms</dd>
-          </div>
-
-          <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
             <dt className="font-medium text-gray-900">types</dt>
             <dd className="text-gray-700 sm:col-span-2 flex">{pokemonData.types.map(type =>
               <div key={type.type.name} className='flex me-4 p-2 rounded' style={{ backgroundColor: typeColors[type.type.name] }}>
@@ -134,6 +126,22 @@ function PokemonDetails() {
               </div>
             )}</dd>
           </div>
+
+          <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+            <dt className="font-medium text-gray-900">height</dt>
+            <dd className="text-gray-700 sm:col-span-2">{(pokemonData.height * 0.1).toFixed(2)} meters</dd>
+          </div>
+
+          <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+            <dt className="font-medium text-gray-900">weight</dt>
+            <dd className="text-gray-700 sm:col-span-2">{(pokemonData.weight * 0.1).toFixed(2)} kilograms</dd>
+          </div>
+
+          <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+            <dt className="font-medium text-gray-900">abilities</dt>
+            <dd className="text-gray-700 sm:col-span-2">{pokemonData.abilities.map(a => a.ability.name).join(', ')}</dd> 
+          </div>
+
         </dl>
       </div>
     </div>

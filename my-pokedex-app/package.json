@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "hoomepage": " minimalpokedex.github.io",
+  "homepage": " minimalpokedex.github.io",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
