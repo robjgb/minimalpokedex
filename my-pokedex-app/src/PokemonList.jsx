@@ -15,20 +15,40 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
   useEffect(() => {
     if (pokeId) {
       const selectedPokemon = pokemonData.find(pokemon => pokemon.url.split('/')[6] === pokeId);
+  
       if (selectedPokemon) {
         setSelectedPokemon(selectedPokemon);
       } else {
-        loadMorePokemon();
+        const calculatedLimit = Math.ceil((parseInt(pokeId, 10) - startingOffset) / 20)  * 20;
+        fetchPokemonFromID(calculatedLimit);
       }
     }
   }, [pokeId, pokemonData]);
 
   useEffect(() => {
-      setOffset(startingOffset); // Reset offset only when startingOffset changes
-      setPokemonData([]); // Clear previous data when generation changes
-      loadMorePokemon(); // Fetch initial data
+    setOffset(startingOffset); // Reset offset only when startingOffset changes
+    setPokemonData([]); // Clear previous data when generation changes
+    loadMorePokemon(); // Fetch initial data
   }, [startingOffset]); // Dependency on startingOffset
-  
+
+  const fetchPokemonFromID = async (dynamicLimit) => {
+    setLoading(true);
+    try {
+      console.log("Loading with dynamic limit", dynamicLimit);
+      const response = await fetch(`https://pokeapi.co/api/v2/pokemon/?offset=${startingOffset}&limit=${dynamicLimit}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch Pokemon");
+      }
+      const data = await response.json();
+      setPokemonData(data.results);
+      setOffset(startingOffset + dynamicLimit);
+    } catch (error) {
+      console.error('Error fetching Pokémon:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const loadMorePokemon = async () => {
     if (offset >= maxOffset) return; // Stop loading if reached max
 
@@ -37,6 +57,7 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
       const remainder = maxOffset - offset;
       const limit = remainder >= 20 ? 20 : remainder;
       const response = await fetch(`https://pokeapi.co/api/v2/pokemon/?offset=${offset}&limit=${limit}`);
+      console.log("Loading range", offset, "to", offset + limit);
       if (!response.ok) {
         throw new Error("Failed to fetch Pokemon");
       }
@@ -82,16 +103,18 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
       if (listRef.current) {
         listRef.current.removeEventListener('scroll', debouncedHandleScroll);
       }
-    };  }, [debouncedHandleScroll, listRef]);
+    };
+  }, [debouncedHandleScroll, listRef]);
 
   const scrollToSelectedPokemon = () => {
-    if (selectedPokemonRef.current) {  
+    if (selectedPokemonRef.current) {
       selectedPokemonRef.current.scrollIntoView({ behavior: "smooth" });
-    } 
+    }
   };
 
   useEffect(() => {
     if (selectedPokemon) {
+      console.log("Scrolling")
       scrollToSelectedPokemon();
     }
   }, [selectedPokemon]);
@@ -102,27 +125,27 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
         {pokemonData.map(pokemon => {
           const id = pokemon.url.split('/')[6];
           const name = pokemon.name;
-          
+
           return (
-            <li key={id}   
-            onClick={() => {
-              setSelectedPokemon(pokemon);
-              navigate(`/gen/${generation}/${id}`); // Update the URL
-            }}
-             ref={selectedPokemon === pokemon ? selectedPokemonRef : null}
-             className="cursor-pointer relative">
-              
+            <li key={id}
+              onClick={() => {
+                setSelectedPokemon(pokemon);
+                navigate(`/gen/${generation}/${id}`); // Update the URL
+              }}
+              ref={selectedPokemon === pokemon ? selectedPokemonRef : null}
+              className="cursor-pointer relative">
+
               <span className="absolute inset-0 border-2 border-dashed border-gray-100 rounded-lg"></span>
 
               <div className="relative bg-white border-2 border-gray-100 rounded-lg shadow-lg transition-transform duration-200 group hover:-translate-x-2 hover:-translate-y-2">
 
                 <div className="flex items-center p-4 pb-0">
-                  <img 
-                    src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`} 
+                  <img
+                    src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`}
                     alt={name}
                     className="w-16 h-16 mr-4"
                   />
-                  
+
                   <div>
                     <h3 className="text-lg font-medium text-gray-800">{name}</h3>
                     <p className="mt-1 text-gray-500">#{id}</p>
@@ -138,8 +161,8 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
           );
         })}
       </ul>
-      
-      {loading && <SkeletonLoader/>}
+
+      {loading && <SkeletonLoader />}
     </div>
   );
 }

@@ -54,6 +54,15 @@ function useGenerationOffsets() {
   return [offsets, generationData, totalGenerations, totalPokemon];
 }
 
+function findKey(dictionary, value) {
+  for (const key in dictionary) {
+    const range = dictionary[key];
+    if (value >= range[0] && value <= range[1]) {
+      return key;
+    }
+  }
+  return null;
+}
 function App() {
   const [generation, setGeneration] = useState(1);
   const [offsets, generationData, totalGenerations, totalPokemon] = useGenerationOffsets();
@@ -74,7 +83,9 @@ function App() {
         return
       }
       else{
-        
+        let gen = findKey(offsets, pokeId);
+        setGeneration(gen)
+        navigate(`/gen/${gen}/${pokeId}`);
       }
     }
   }, [pokeId, totalPokemon, genId]);
@@ -122,7 +133,7 @@ function App() {
               :
               <SkeletonLoader/>
             }
-            <div className="w-2/3 p-4">
+            <div className="w-2/3 p-4 overflow-y-auto">
               <PokemonDetails/>
             </div>
           </div>
