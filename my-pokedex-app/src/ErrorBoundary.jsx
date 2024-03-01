@@ -7,7 +7,7 @@ const ErrorBoundary = () => {
       <div className="flex flex-col items-center justify-center h-screen bg-white">
   
         <img 
-          src="/src/assets/TeamRocketAnime.webp" 
+          src="/TeamRocketAnime.webp" 
           alt="Team Rocket" 
           className="mb-8 w-52" 
         />
