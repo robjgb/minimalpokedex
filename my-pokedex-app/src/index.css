@@ -1,3 +1,16 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@keyframes growProgress {
+    0% {
+      width: 0;
+    }
+    100% {
+      width: var(--progress-width);
+    }
+  }
+  
+  .progress-bar {
+    animation: growProgress 1s ease-in-out forwards;
+  }

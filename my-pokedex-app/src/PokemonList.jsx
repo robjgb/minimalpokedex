@@ -19,7 +19,10 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
       if (selectedPokemon) {
         setSelectedPokemon(selectedPokemon);
       } else {
-        const calculatedLimit = Math.ceil((parseInt(pokeId, 10) - startingOffset) / 20)  * 20;
+        let calculatedLimit = Math.ceil((parseInt(pokeId, 10) - startingOffset) / 20)  * 20;
+        if (calculatedLimit > maxOffset){
+          calculatedLimit = maxOffset
+        }
         fetchPokemonFromID(calculatedLimit);
       }
     }
@@ -34,7 +37,6 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
   const fetchPokemonFromID = async (dynamicLimit) => {
     setLoading(true);
     try {
-      console.log("Loading with dynamic limit", dynamicLimit);
       const response = await fetch(`https://pokeapi.co/api/v2/pokemon/?offset=${startingOffset}&limit=${dynamicLimit}`);
       if (!response.ok) {
         throw new Error("Failed to fetch Pokemon");
@@ -57,7 +59,6 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
       const remainder = maxOffset - offset;
       const limit = remainder >= 20 ? 20 : remainder;
       const response = await fetch(`https://pokeapi.co/api/v2/pokemon/?offset=${offset}&limit=${limit}`);
-      console.log("Loading range", offset, "to", offset + limit);
       if (!response.ok) {
         throw new Error("Failed to fetch Pokemon");
       }
@@ -114,7 +115,6 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
 
   useEffect(() => {
     if (selectedPokemon) {
-      console.log("Scrolling")
       scrollToSelectedPokemon();
     }
   }, [selectedPokemon]);

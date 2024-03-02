@@ -3,6 +3,16 @@ import { SpeakerWaveIcon } from '@heroicons/react/24/outline';
 import { useParams } from 'react-router-dom';
 import DetailsLoader from './DetailsLoader';
 
+const pokemonStats = [
+  { base_stat: 45, effort: 0, stat: { name: "hp" } },
+  { base_stat: 49, effort: 0, stat: { name: "attack" } },
+  { base_stat: 49, effort: 0, stat: { name: "defense" } },
+  { base_stat: 65, effort: 1, stat: { name: "special-attack" } },
+  { base_stat: 65, effort: 0, stat: { name: "special-defense" } },
+  { base_stat: 45, effort: 0, stat: { name: "speed" } },
+];
+
+
 const typeColors = {
   normal: '#A8A878',
   fire: '#F08030',
@@ -31,7 +41,7 @@ const EvolutionTree = ({ evolution }) => {
 
   const loadEvolutionChainData = async (evolutions) => {
     const pokemonIds = evolutions.map(ev => ev.species.url.split('/').slice(-2, -1)[0]);
-    
+
     setIsLoading(true);
     await Promise.all(pokemonIds.map(id => fetchPokemonData(id)));
     setIsLoading(false);
@@ -105,7 +115,7 @@ const EvolutionTree = ({ evolution }) => {
     });
 
     if (isLoading) {
-      return  <div className="skeleton w-32 h-32 bg-gray-300" />
+      return <div className="skeleton w-32 h-32 bg-gray-300" />
     }
 
     return chunks;
@@ -114,7 +124,7 @@ const EvolutionTree = ({ evolution }) => {
   return isLoading ? (
     <div className="skeleton w-32 h-32 bg-gray-300" />
   ) : (
-    <div className="flex flex-row items-center justify-center">
+    <div className="flex flex-row">
       {renderEvolutionChain([evolution.chain])}
     </div>
   );
@@ -141,6 +151,7 @@ function PokemonDetails() {
       const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokeId}`);
       const pokemonData = await response.json();
       setPokemonData(pokemonData);
+      console.log(pokemonData)
 
       const speciesResponse = await fetch(pokemonData.species.url);
       const speciesData = await speciesResponse.json();
@@ -182,8 +193,8 @@ function PokemonDetails() {
       {isLoading ? (
         <DetailsLoader />
       ) : (
-        <div className="grid grid-cols-5 grid-rows-5 gap-4 p-4">
-          <div className='col-span-2 row-span-2'> 
+        <div className="grid grid-cols-6 grid-rows-7 p-4">
+          <div className='col-span-2 row-span-2'>
             <div className="flex items-center mb-4">
               <h2 className="text-2xl font-bold text-gray-800 mr-4">{pokemonData.name}</h2>
               {audioSrc && (
@@ -203,7 +214,7 @@ function PokemonDetails() {
               onMouseOver={e => (e.currentTarget.src = pokemonData.sprites.other.showdown.front_default ?? pokemonData.sprites.other["official-artwork"].front_default)}
               onMouseOut={e => (e.currentTarget.src = pokemonData.sprites.other.home.front_default)} />
           </div>
-          <div className="col-span-3 row-span-2 col-start-3">
+          <div className="col-span-4 row-span-2 col-start-3">
             <dl className="-my-3 divide-y divide-gray-100 text-sm">
               {(speciesData && speciesData.flavor_text_entries[0]?.flavor_text) &&
                 <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
@@ -245,7 +256,32 @@ function PokemonDetails() {
             </dl>
           </div>
 
-          <div className='col-span-5 row-span-3 row-start-3 mt-8 flex flex-col items-center'>
+          <div className='col-span-6 row-span-2 row-start-3 flex flex-col '>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">stats</h2>
+            <dl className="-my-3 divide-y divide-gray-100 text-sm">
+              <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+                <dd className="text-gray-700 sm:col-span-2 space-y-4">
+                  {pokemonData.stats.map((stat) => (
+                    <div key={stat.stat.name}>
+                      <div className="flex justify-between">
+                        <span className="capitalize">{stat.stat.name}</span>
+                        <span>{stat.base_stat}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                        <div
+                          className="bg-black h-2.5 rounded-full progress-bar"
+                          style={{ '--progress-width': `${(stat.base_stat / 255) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+
+          <div className='col-span-6 row-span-3 row-start-5 mt-8 flex flex-col'>
             <h2 className="text-2xl font-bold text-gray-800 mb-2">evolutions</h2>
             {evoChain.chain.evolves_to.length == 0 && <p className='mb-4'> this pokemon does not evolve. </p>}
             <EvolutionTree evolution={evoChain} />
