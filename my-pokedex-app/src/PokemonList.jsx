@@ -20,9 +20,10 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
         setSelectedPokemon(selectedPokemon);
       } else {
         let calculatedLimit = Math.ceil((parseInt(pokeId, 10) - startingOffset) / 20)  * 20;
-        if (calculatedLimit > maxOffset){
-          calculatedLimit = maxOffset
+        if (startingOffset + calculatedLimit > maxOffset){
+          calculatedLimit = maxOffset - startingOffset
         }
+        console.log(calculatedLimit)
         fetchPokemonFromID(calculatedLimit);
       }
     }
