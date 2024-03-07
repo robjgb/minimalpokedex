@@ -14,3 +14,9 @@
   .progress-bar {
     animation: growProgress 1s ease-in-out forwards;
   }
+
+  .fadeWrapper {
+    --mask: linear-gradient(to bottom, #000 99%, transparent 100%);
+    -webkit-mask: var(--mask); 
+    mask: var(--mask);
+  }

@@ -125,7 +125,7 @@ function App() {
           </div>
         </div>
       
-        <div className='flex flex-row overflow-y-auto'>
+        <div className='flex flex-row overflow-y-auto fadeWrapper'>
             {
               generationOffsets.length > 0 ?
                 <PokemonList
