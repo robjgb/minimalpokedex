@@ -6,7 +6,7 @@ import {
   createBrowserRouter,
   RouterProvider,
 } from "react-router-dom";
-import ErrorBoundary from './ErrorBoundary.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 
 
 const router = createBrowserRouter([

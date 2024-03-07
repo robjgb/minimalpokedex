@@ -186,14 +186,14 @@ function PokemonDetails() {
     }
   };
 
-  if (!pokemonData || !pokeId) return <p className='text-gray-600 hover:bg-gray-50 hover:text-gray-700'>select a pokémon to view details</p>
+  if (!pokemonData || !pokeId) return <p className='text-gray-600 hover:bg-gray-50 hover:text-gray-700'>search or select a pokémon to view details</p>
 
   return (
     <div>
       {isLoading ? (
         <DetailsLoader />
       ) : (
-        <div className="grid grid-cols-6 grid-rows-7 p-4">
+        <div className="grid grid-cols-6 grid-rows-7">
           <div className='col-span-2 row-span-2'>
             <div className="flex items-center mb-4">
               <h2 className="text-2xl font-bold text-gray-800 mr-4">{pokemonData.name}</h2>

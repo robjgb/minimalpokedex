@@ -12,7 +12,7 @@ function GenerationDropdown({ generation, setGeneration, maxOffset }) {
   };
 
   return (
-    <div className="relative px-4 pb-4">
+    <div className="relative">
       <div className="inline-flex items-center overflow-hidden rounded-md border bg-white">
         <button
           onClick={() => setOpen(!open)}

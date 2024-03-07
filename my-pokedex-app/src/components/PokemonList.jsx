@@ -23,7 +23,6 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
         if (startingOffset + calculatedLimit > maxOffset){
           calculatedLimit = maxOffset - startingOffset
         }
-        console.log(calculatedLimit)
         fetchPokemonFromID(calculatedLimit);
       }
     }
@@ -121,8 +120,8 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
   }, [selectedPokemon]);
 
   return (
-    <div className="w-1/3 overflow-y-auto" ref={listRef}>
-      <ul className="p-2">
+    <div className="w-2/5 overflow-y-auto" ref={listRef}>
+      <ul className="m-2">
         {pokemonData.map(pokemon => {
           const id = pokemon.url.split('/')[6];
           const name = pokemon.name;

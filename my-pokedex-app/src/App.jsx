@@ -1,10 +1,11 @@
 // App.jsx
 import React, { useState, useEffect, useMemo } from 'react';
-import GenerationDropdown from './GenerationDropdown';
-import PokemonList from './PokemonList';
-import PokemonDetails from './PokemonDetails';
-import SkeletonLoader from './SkeletalLoader';
+import GenerationDropdown from './components/GenerationDropdown';
+import PokemonList from './components/PokemonList';
+import PokemonDetails from './components/PokemonDetails';
+import SkeletonLoader from './components/SkeletalLoader';
 import { useNavigate, useParams } from 'react-router-dom';
+import SearchBar from './components/SearchBar';
 
 function useGenerationOffsets() {
   const [offsets, setOffsets] = useState({});
@@ -106,34 +107,39 @@ function App() {
 
   return (
     <div className="container mx-auto h-screen">
-      <div className='p-4 md:p-8 h-full flex flex-col'>
-      <h1 className="p-4 pt-0 ">minimal pokedex</h1>
-        <div className='flex'>
-          <GenerationDropdown generation={generation} setGeneration={setGeneration} />
-          {Object.keys(generationData).length > 0 &&
-            <div className=" flex p-2 rounded mb-4">
-              <h5 className='px-4 text-sm/none text-gray-600'>{generationData[generation][0].names.filter(entry => entry.language.name === "en")[0]?.name}</h5>
-              <h5 className='px-4 text-sm/none text-gray-600'>region: {generationData[generation][0].main_region.name}</h5>
-              <h5 className='px-4 text-sm/none text-gray-600'>population: {generationData[generation][0].pokemon_species.length}</h5>
-            </div>
-          }
-        </div>
-
-        <div className='flex flex-row overflow-y-hidden'>
-          {
-            generationOffsets.length > 0 ?
-              <PokemonList
-                height="fit-content"
-                key={generation}
-                startingOffset={generationOffsets[0]}
-                maxOffset={generationOffsets[1]}
-                navigate={navigate}
-                generation={generation}
-              />
-              :
-              <SkeletonLoader/>
+      <div className='md:p-8 h-full flex flex-col'>
+      <h1 className="pt-0 ms-2">minimal pokedex</h1>
+        <div className='flex flex-row items-center justify-between'>
+          <div className='flex flex-row basis-2/5 ms-2'>
+            <GenerationDropdown generation={generation} setGeneration={setGeneration} />
+            {Object.keys(generationData).length > 0 &&
+              <div className=" flex p-2 rounded">
+                <h5 className='px-4 text-sm/none text-gray-600'>{generationData[generation][0].names.filter(entry => entry.language.name === "en")[0]?.name}</h5>
+                <h5 className='px-4 text-sm/none text-gray-600'>region: {generationData[generation][0].main_region.name}</h5>
+                <h5 className='px-4 text-sm/none text-gray-600'>population: {generationData[generation][0].pokemon_species.length}</h5>
+              </div>
             }
-            <div className="w-2/3 p-4 overflow-y-auto">
+          </div>
+          <div className="basis-3/5 px-3" >
+            <SearchBar totalPokemon={totalPokemon} />
+          </div>
+        </div>
+      
+        <div className='flex flex-row overflow-y-auto'>
+            {
+              generationOffsets.length > 0 ?
+                <PokemonList
+                  height="fit-content"
+                  key={generation}
+                  startingOffset={generationOffsets[0]}
+                  maxOffset={generationOffsets[1]}
+                  navigate={navigate}
+                  generation={generation}
+                />
+                :
+                <SkeletonLoader/>
+              }
+            <div className="w-3/5 p-4 overflow-y-auto">
               <PokemonDetails/>
             </div>
           </div>
