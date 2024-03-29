@@ -2,133 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { SpeakerWaveIcon } from '@heroicons/react/24/outline';
 import { useParams } from 'react-router-dom';
 import DetailsLoader from './DetailsLoader';
-
-const pokemonStats = [
-  { base_stat: 45, effort: 0, stat: { name: "hp" } },
-  { base_stat: 49, effort: 0, stat: { name: "attack" } },
-  { base_stat: 49, effort: 0, stat: { name: "defense" } },
-  { base_stat: 65, effort: 1, stat: { name: "special-attack" } },
-  { base_stat: 65, effort: 0, stat: { name: "special-defense" } },
-  { base_stat: 45, effort: 0, stat: { name: "speed" } },
-];
-
-
-const typeColors = {
-  normal: '#A8A878',
-  fire: '#F08030',
-  water: '#6890F0',
-  electric: '#F8D030',
-  grass: '#78C850',
-  ice: '#98D8D8',
-  fighting: '#C03028',
-  poison: '#A040A0',
-  ground: '#E0C068',
-  flying: '#A890F0',
-  psychic: '#F85888',
-  bug: '#A8B820',
-  rock: '#B8A038',
-  ghost: '#705898',
-  dragon: '#7038F8',
-  dark: '#705848',
-  steel: '#B8B8D0',
-  fairy: '#EE99AC',
-};
-
-
-const EvolutionTree = ({ evolution }) => {
-  const [pokemonData, setPokemonData] = useState({});
-  const [isLoading, setIsLoading] = useState(true);
-
-  const loadEvolutionChainData = async (evolutions) => {
-    const pokemonIds = evolutions.map(ev => ev.species.url.split('/').slice(-2, -1)[0]);
-
-    setIsLoading(true);
-    await Promise.all(pokemonIds.map(id => fetchPokemonData(id)));
-    setIsLoading(false);
-  };
-
-  useEffect(() => {
-    loadEvolutionChainData(evolution.chain.evolves_to);
-  }, [evolution.chain]);
-
-
-  const fetchPokemonData = async (id) => {
-    try {
-      const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
-      const data = await response.json();
-      setPokemonData((prevData) => ({ ...prevData, [id]: data }));
-    } catch (error) {
-      console.error('Error fetching Pokemon data:', error);
-    }
-  };
-
-  const renderEvolutionChain = (evolutions) => {
-    const chunks = [];
-    let currentChunk = [];
-
-    evolutions.forEach((ev, index) => {
-      const pokemonId = ev.species.url.split('/').slice(-2, -1)[0];
-      const pokemonTypes = pokemonData[pokemonId]?.types || [];
-
-      if (!pokemonData[pokemonId]) {
-        fetchPokemonData(pokemonId);
-      }
-
-      currentChunk.push(
-        <div key={index} className="flex flex-row items-center mx-2">
-          <div className="bg-white border-2 w-full mt-2 border-gray-100 shadow-lg transition-transform duration-200 group hover:-translate-x-2 hover:-translate-y-2 p-2 rounded-md flex flex-col items-center">
-            <img
-              src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`}
-              alt={ev.species.name}
-              className="w-20 h-20"
-            />
-            <div className="font-bold">{ev.species.name}</div>
-            {pokemonTypes.length > 0 && (
-              <div className="flex p-1">
-                {pokemonTypes.map((type, index) => (
-                  <div
-                    key={index}
-                    className={index > 0 ? "flex ms-2 p-1 rounded" : "flex p-1 rounded"}
-                    style={{ backgroundColor: typeColors[type.type.name] }}
-                  >
-                    <p className="mx-1 text-xs text-white">{type.type.name}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          {ev.evolves_to.length > 0 && (
-            <div className="flex flex-row items-center mx-4">
-              {renderEvolutionChain(ev.evolves_to)}
-            </div>
-          )}
-        </div>
-      );
-      if ((index + 1) % 4 === 0 || index === evolutions.length - 1) {
-        chunks.push(
-          <div key={`chunk-${chunks.length}`} className="flex flex-col">
-            {currentChunk}
-          </div>
-        );
-        currentChunk = [];
-      }
-    });
-
-    if (isLoading) {
-      return <div className="skeleton w-32 h-32 bg-gray-300" />
-    }
-
-    return chunks;
-  };
-
-  return isLoading ? (
-    <div className="skeleton w-32 h-32 bg-gray-300" />
-  ) : (
-    <div className="flex flex-row">
-      {renderEvolutionChain([evolution.chain])}
-    </div>
-  );
-};
+import Slider from 'react-slick';
+import 'slick-carousel/slick/slick.css';
+import 'slick-carousel/slick/slick-theme.css';
+import EvolutionTree from './PokemonDetails/EvolutionTree';
+import typeColors from './PokemonDetails/typeColors';
 
 function PokemonDetails() {
   const [pokemonData, setPokemonData] = useState(null);
@@ -141,6 +19,15 @@ function PokemonDetails() {
   const [isLoading, setIsLoading] = useState(false);
   const [evoChain, setEvoChain] = useState(null);
 
+  const sliderSettings = {
+    dots: true,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    adaptiveHeight: true,
+  };
+
   useEffect(() => {
     setAudioSrc(null);
     setIsPlaying(false);
@@ -151,7 +38,6 @@ function PokemonDetails() {
       const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokeId}`);
       const pokemonData = await response.json();
       setPokemonData(pokemonData);
-      console.log(pokemonData)
 
       const speciesResponse = await fetch(pokemonData.species.url);
       const speciesData = await speciesResponse.json();
@@ -186,6 +72,36 @@ function PokemonDetails() {
     }
   };
 
+  const getUniqueDescriptions = (flavorTextEntries) => {
+    const descriptions = [];
+    flavorTextEntries
+      .filter(entry => entry.language.name === "en")
+      .sort((a, b) => a.id - b.id)
+      .forEach(({ flavor_text }) => {
+        const normalizedText = flavor_text.replace(/[\n\f]/g, ' ');
+  
+        const index = descriptions.findIndex((description) => {
+          const existing = description.toLowerCase().split(' ');
+          const existingFirst3words = existing.slice(0, 3).join(' ');
+          const existingLast3words = existing.slice(-3).join(' ');
+  
+          const current = normalizedText.toLowerCase().split(' ');
+          const currentFirst3words = current.slice(0, 3).join(' ');
+          const currentLast3words = current.slice(-3).join(' ');
+  
+          return (
+            existingFirst3words === currentFirst3words || existingLast3words === currentLast3words
+          );
+        });
+        if (index === -1) {
+          descriptions.push(normalizedText);
+        } else {
+          descriptions[index] = normalizedText;
+        }
+      });
+    return descriptions;
+  };
+
   if (!pokemonData || !pokeId) return <p className='text-gray-600 hover:bg-gray-50 hover:text-gray-700'>search or select a pokémon to view details</p>
 
   return (
@@ -193,7 +109,7 @@ function PokemonDetails() {
       {isLoading ? (
         <DetailsLoader />
       ) : (
-        <div className="grid grid-cols-6 grid-rows-7">
+        <div className="grid grid-cols-6">
           <div className='col-span-2 row-span-2'>
             <div className="flex items-center mb-4">
               <h2 className="text-2xl font-bold text-gray-800 mr-4">{pokemonData.name}</h2>
@@ -216,12 +132,22 @@ function PokemonDetails() {
           </div>
           <div className="col-span-4 row-span-2 col-start-3">
             <dl className="-my-3 divide-y divide-gray-100 text-sm">
-              {(speciesData && speciesData.flavor_text_entries[0]?.flavor_text) &&
-                <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+              {speciesData && speciesData.flavor_text_entries.length > 0 && (
+                <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4 relative">
                   <dt className="font-medium text-gray-900">description</dt>
-                  <dd className="text-gray-700 sm:col-span-2">{speciesData.flavor_text_entries.filter(entry => entry.language.name === "en")[0]?.flavor_text.replace(/\u000c/g, ' ')}</dd>
+                  <dd className="text-gray-700 sm:col-span-2">
+                    <div className="relative">
+                    <Slider {...sliderSettings}>
+                      {getUniqueDescriptions(speciesData.flavor_text_entries).map((flavor_text, index) => (
+                        <div key={index}>
+                          <p>{flavor_text}</p>
+                        </div>
+                      ))}
+                    </Slider>
+                    </div>
+                  </dd>
                 </div>
-              }
+              )}
               <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
                 <dt className="font-medium text-gray-900">height</dt>
                 <dd className="text-gray-700 sm:col-span-2">{(pokemonData.height * 0.1).toFixed(2)} meters</dd>
@@ -256,7 +182,7 @@ function PokemonDetails() {
             </dl>
           </div>
 
-          <div className='col-span-6 row-span-2 row-start-3 flex flex-col '>
+          <div className='col-span-6 row-span-2 flex flex-col '>
             <h2 className="text-2xl font-bold text-gray-800 mb-2">stats</h2>
             <dl className="-my-3 divide-y divide-gray-100 text-sm">
               <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
@@ -264,7 +190,7 @@ function PokemonDetails() {
                   {pokemonData.stats.map((stat) => (
                     <div key={stat.stat.name}>
                       <div className="flex justify-between">
-                        <span className="capitalize">{stat.stat.name}</span>
+                        <span className="">{stat.stat.name}</span>
                         <span>{stat.base_stat}</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">

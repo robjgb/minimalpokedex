@@ -3,8 +3,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import SkeletonLoader from './SkeletalLoader';
 import { useParams } from 'react-router-dom';
 
-function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
-  const [offset, setOffset] = useState(startingOffset);
+function PokemonList({ startingOffset, maxOffset, navigate, generation, selectedTypes }) {
+  const [offset, setOffset] = useState(startingOffset); 
+  const [totalOffset, setTotalOffset] = useState(maxOffset);
   const [pokemonData, setPokemonData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedPokemon, setSelectedPokemon] = useState(null);
@@ -20,8 +21,8 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
         setSelectedPokemon(selectedPokemon);
       } else {
         let calculatedLimit = Math.ceil((parseInt(pokeId, 10) - startingOffset) / 20)  * 20;
-        if (startingOffset + calculatedLimit > maxOffset){
-          calculatedLimit = maxOffset - startingOffset
+        if (startingOffset + calculatedLimit > totalOffset){
+          calculatedLimit = totalOffset - startingOffset
         }
         fetchPokemonFromID(calculatedLimit);
       }
@@ -34,6 +35,48 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
     loadMorePokemon(); // Fetch initial data
   }, [startingOffset]); // Dependency on startingOffset
 
+  useEffect(() => {
+    if (selectedTypes.length > 0) {
+      console.log("loading")
+      if (generation !== 'all'){
+        navigate(`/gen/${generation}`); // Update the URL
+      }
+      loadMoreFilteredPokemon()
+    } else {
+      // If no types are selected, reset the data
+      setPokemonData([]); // Clear previous data 
+      setTotalOffset(maxOffset); 
+      setOffset(startingOffset)
+    }
+  }, [selectedTypes]); // Only trigger the effect when selectedTypes changes
+
+  useEffect(() => {
+    if(offset === startingOffset) {
+      loadMorePokemon(); // Fetch reset data  
+    }
+  }, [offset]); 
+
+  const loadMoreFilteredPokemon = async () => {
+    setLoading(true);
+    try {
+      const limit = totalOffset - startingOffset;
+      const response = await fetch(`https://pokeapi.co/api/v2/pokemon/?offset=${startingOffset}&limit=${limit}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch Pokémon");
+      }
+      const data = await response.json();
+      filterPokemonByTypes(data.results, selectedTypes).then((filteredPokemon) => {
+        setPokemonData(filteredPokemon);
+        console.log(filteredPokemon)
+      });
+      setOffset(maxOffset)
+    } catch (error) {
+      console.error('Error fetching Pokémon:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchPokemonFromID = async (dynamicLimit) => {
     setLoading(true);
     try {
@@ -42,7 +85,9 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
         throw new Error("Failed to fetch Pokemon");
       }
       const data = await response.json();
-      setPokemonData(data.results);
+      let filteredPokemon = data.results;
+
+      setPokemonData(filteredPokemon);
       setOffset(startingOffset + dynamicLimit);
     } catch (error) {
       console.error('Error fetching Pokémon:', error);
@@ -52,24 +97,47 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
   };
 
   const loadMorePokemon = async () => {
-    if (offset >= maxOffset) return; // Stop loading if reached max
-
+    console.log(offset, totalOffset)
+    if (offset >= totalOffset) return; // Stop loading if reached max
+  
     setLoading(true);
     try {
-      const remainder = maxOffset - offset;
+      const remainder = totalOffset - offset;
       const limit = remainder >= 20 ? 20 : remainder;
       const response = await fetch(`https://pokeapi.co/api/v2/pokemon/?offset=${offset}&limit=${limit}`);
       if (!response.ok) {
         throw new Error("Failed to fetch Pokemon");
       }
       const data = await response.json();
-      setPokemonData([...pokemonData, ...data.results]);
+      let newPokemonData = data.results;
+  
+      setPokemonData([...pokemonData, ...newPokemonData]);
       setOffset(prevOffset => prevOffset + limit);
+
     } catch (error) {
       console.error('Error fetching Pokémon:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const filterPokemonByTypes = async (pokemon, types) => {
+    const typePokemonLists = await Promise.all(
+      types.map(async (type) => {
+        const response = await fetch(`https://pokeapi.co/api/v2/type/${type}`);
+        const data = await response.json();
+        return data.pokemon.map((p) => p.pokemon.name);
+      })
+    );
+  
+    const filteredPokemon = pokemon.filter((p) => {
+      const pokemonName = p.name;
+      return typePokemonLists.every((list) => list.includes(pokemonName));
+    });
+
+    console.log(types, filteredPokemon)
+  
+    return filteredPokemon;
   };
 
   const debounce = (func, delay) => {
@@ -137,7 +205,7 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation }) {
 
               <span className="absolute inset-0 border-2 border-dashed border-gray-100 rounded-lg"></span>
 
-              <div className="relative bg-white border-2 border-gray-100 rounded-lg shadow-lg transition-transform duration-200 group hover:-translate-x-2 hover:-translate-y-2">
+              <div className={`relative ${ selectedPokemon === pokemon ? " bg-gray-100": "bg-white"} border-2 border-gray-100 rounded-lg shadow-lg transition-transform duration-200 group hover:-translate-x-2 hover:-translate-y-2`}>
 
                 <div className="flex items-center p-4 pb-0">
                   <img

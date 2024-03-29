@@ -20,3 +20,15 @@
     -webkit-mask: var(--mask); 
     mask: var(--mask);
   }
+  .slick-dots {
+    position: relative; /* Change from absolute to relative positioning */
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    text-align: center;
+    bottom: 0;
+  }
+  

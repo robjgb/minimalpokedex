@@ -32,7 +32,6 @@ function SearchBar({ totalPokemon }) {
   const handleDropdownClick = (pokemon) => {
     // Extract the ID from the URL
     const id = parseInt(pokemon.url.split('/')[6]);
-    console.log('Clicked Pokemon ID:', id);
 
     // Navigate to the corresponding Pokemon details page
     navigate(`/${id}`);

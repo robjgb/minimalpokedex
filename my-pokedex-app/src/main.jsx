@@ -8,7 +8,6 @@ import {
 } from "react-router-dom";
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 
-
 const router = createBrowserRouter([
   {
     path: '/',
@@ -18,19 +17,17 @@ const router = createBrowserRouter([
       {
         path: 'gen/:genId',
         element: <App />,
-        children: [
-          {
-            path: ':pokeId',
-            element: <App />,
-          }
-        ]
+      },
+      {
+        path: 'gen/:genId/:pokeId',
+        element: <App />,
       },
       {
         path: ':pokeId',
         element: <App />,
-      }
-    ]
-  }
+      },
+    ],
+  },
 ]);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
