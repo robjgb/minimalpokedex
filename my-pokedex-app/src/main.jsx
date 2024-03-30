@@ -21,11 +21,7 @@ const router = createBrowserRouter([
       {
         path: 'gen/:genId/:pokeId',
         element: <App />,
-      },
-      {
-        path: ':pokeId',
-        element: <App />,
-      },
+      }
     ],
   },
 ]);

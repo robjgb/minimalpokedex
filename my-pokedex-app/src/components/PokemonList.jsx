@@ -1,9 +1,17 @@
 // PokemonList.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import SkeletonLoader from './SkeletalLoader';
 import { useParams } from 'react-router-dom';
+import AppContext from '../AppContext';
 
-function PokemonList({ startingOffset, maxOffset, navigate, generation, selectedTypes }) {
+function PokemonList({ startingOffset, maxOffset}) {
+  const {
+    generation,
+    selectedTypes,
+    navigate, 
+    setGeneration,
+    getGenIdFromPokeId
+  } = useContext(AppContext);
   const [offset, setOffset] = useState(startingOffset); 
   const [totalOffset, setTotalOffset] = useState(maxOffset);
   const [pokemonData, setPokemonData] = useState([]);
@@ -37,7 +45,6 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation, selected
 
   useEffect(() => {
     if (selectedTypes.length > 0) {
-      console.log("loading")
       if (generation !== 'all'){
         navigate(`/gen/${generation}`); // Update the URL
       }
@@ -67,7 +74,6 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation, selected
       const data = await response.json();
       filterPokemonByTypes(data.results, selectedTypes).then((filteredPokemon) => {
         setPokemonData(filteredPokemon);
-        console.log(filteredPokemon)
       });
       setOffset(maxOffset)
     } catch (error) {
@@ -97,7 +103,6 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation, selected
   };
 
   const loadMorePokemon = async () => {
-    console.log(offset, totalOffset)
     if (offset >= totalOffset) return; // Stop loading if reached max
   
     setLoading(true);
@@ -134,8 +139,6 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation, selected
       const pokemonName = p.name;
       return typePokemonLists.every((list) => list.includes(pokemonName));
     });
-
-    console.log(types, filteredPokemon)
   
     return filteredPokemon;
   };
@@ -198,7 +201,9 @@ function PokemonList({ startingOffset, maxOffset, navigate, generation, selected
             <li key={id}
               onClick={() => {
                 setSelectedPokemon(pokemon);
-                navigate(`/gen/${generation}/${id}`); // Update the URL
+                const genId = getGenIdFromPokeId(id);
+                setGeneration(genId);
+                navigate(`/gen/${genId}/${id}`);
               }}
               ref={selectedPokemon === pokemon ? selectedPokemonRef : null}
               className="cursor-pointer relative">

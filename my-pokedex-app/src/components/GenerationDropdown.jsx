@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useContext } from 'react';
+import AppContext from '../AppContext';
 
-function GenerationDropdown({ generation, setGeneration, totalGenerations }) {
+function GenerationDropdown() {
+  const {
+    generation,
+    setGeneration,
+    totalGenerations, 
+    navigate
+  } = useContext(AppContext);
+
   const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
 
   const handleGenerationClick = (gen) => {
     setGeneration(gen);

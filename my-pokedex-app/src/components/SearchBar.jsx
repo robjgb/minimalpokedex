@@ -1,14 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useContext } from 'react';
+import AppContext from '../AppContext';
 
 function SearchBar({ totalPokemon }) {
+  const {
+    navigate, 
+    setGeneration,
+    getGenIdFromPokeId
+  } = useContext(AppContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [pokemonResults, setPokemonResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  const navigate = useNavigate();
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
+  
 
   useEffect(() => {
     // Fetch the list of all Pokemon when the component mounts
@@ -29,12 +34,18 @@ function SearchBar({ totalPokemon }) {
     setSelectedIndex(-1);
   };
 
+  const navigateToPokemon = (id) => {
+    const genId = getGenIdFromPokeId(id);
+    setGeneration(genId);
+    navigate(`/gen/${genId}/${id}`);
+  }
+
   const handleDropdownClick = (pokemon) => {
     // Extract the ID from the URL
     const id = parseInt(pokemon.url.split('/')[6]);
 
     // Navigate to the corresponding Pokemon details page
-    navigate(`/${id}`);
+    navigateToPokemon(id);
     setSearchTerm(''); // Clear the search term after navigation
     setSelectedIndex(-1); // Reset the selected index
     setShowDropdown(false); // Hide the dropdown after selection
@@ -55,7 +66,7 @@ function SearchBar({ totalPokemon }) {
         // Extract the ID from the URL
         const id = parseInt(pokemon.url.split('/')[6]);
         // Navigate to the corresponding Pokemon details page
-        navigate(`/${id}`);
+        navigateToPokemon(id);
         setSearchTerm(''); // Clear the search term after navigation
       } else {
         // Handle the case when no Pokemon is found
@@ -155,7 +166,7 @@ function SearchBar({ totalPokemon }) {
         >
           <ul className="py-1">
             {filteredResults.map((pokemon, index) => (
-              <div class="p-2">
+              <div className="p-2">
                 <li
                   key={pokemon.url}
                   className={`flex flex-row items-center rounded-lg px-4 py-2 text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-700 cursor-pointer ${index === selectedIndex ? 'bg-gray-50' : 'hover:bg-gray-50'

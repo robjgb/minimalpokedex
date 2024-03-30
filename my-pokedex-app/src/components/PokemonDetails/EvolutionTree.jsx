@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from 'react';
 import typeColors from './typeColors';
-
+import AppContext from '../../AppContext';
 
 export default function EvolutionTree({ evolution }) {
+  const {
+    navigate, 
+    setGeneration,
+    getGenIdFromPokeId
+  } = useContext(AppContext);
   const [pokemonData, setPokemonData] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
 
   const loadEvolutionChainData = async (evolutions) => {
     const pokemonIds = evolutions.map(ev => ev.species.url.split('/').slice(-2, -1)[0]);
@@ -166,7 +169,9 @@ export default function EvolutionTree({ evolution }) {
 
           <div
             onClick={() => {
-              navigate(`/${pokemonId}`); // Update the URL
+              const genId = getGenIdFromPokeId(pokemonId);
+              setGeneration(genId);
+              navigate(`/gen/${genId}/${pokemonId}`);
             }}
             className=" flex flex-col items-center cursor-pointer relative mt-2">
             <span className="absolute inset-0 border-2 border-dashed border-gray-100 rounded-lg"></span>
