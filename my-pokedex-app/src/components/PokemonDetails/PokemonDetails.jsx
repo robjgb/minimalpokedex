@@ -55,8 +55,10 @@ function PokemonDetails() {
       for (const ability of pokemonData.abilities) {
         const response = await fetch(ability.ability.url);
         const data = await response.json();
+        console.log(data)
+
         const englishEntry = data.effect_entries.find((entry) => entry.language.name === 'en');
-        descriptions[ability.ability.name] = englishEntry ? englishEntry.effect : '';
+        descriptions[ability.ability.name] = englishEntry ? englishEntry.short_effect : '';
       }
       setAbilityDescriptions(descriptions)
       setIsLoading(false);
