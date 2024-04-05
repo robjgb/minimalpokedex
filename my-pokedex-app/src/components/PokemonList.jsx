@@ -10,13 +10,14 @@ function PokemonList({ startingOffset, maxOffset}) {
     selectedTypes,
     navigate, 
     setGeneration,
+    selectedPokemon, 
+    setSelectedPokemon,
     getGenIdFromPokeId
   } = useContext(AppContext);
   const [offset, setOffset] = useState(startingOffset); 
   const [totalOffset, setTotalOffset] = useState(maxOffset);
   const [pokemonData, setPokemonData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedPokemon, setSelectedPokemon] = useState(null);
   const listRef = useRef(null);
   const selectedPokemonRef = useRef(null);
   const { pokeId } = useParams();
@@ -191,7 +192,7 @@ function PokemonList({ startingOffset, maxOffset}) {
   }, [selectedPokemon]);
 
   return (
-    <div className="w-2/5 overflow-y-auto" ref={listRef}>
+    <div className="w-full md:w-2/5 overflow-y-auto" ref={listRef}>
       <ul className="m-2">
         {pokemonData.map(pokemon => {
           const id = pokemon.url.split('/')[6];

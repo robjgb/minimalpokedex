@@ -7,6 +7,8 @@ const AppContext = createContext({
   totalGenerations: null,
   generationData: {},
   totalPokemon: null,
+  selectedPokemon: null,
+  setSelectedPokemon: () => {},
   selectedTypes: [],
   handleTypeFilter: () => {},
   navigate: () => {},

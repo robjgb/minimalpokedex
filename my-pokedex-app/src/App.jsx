@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import GenerationDropdown from './components/GenerationDropdown';
 import PokemonList from './components/PokemonList';
-import PokemonDetails from './components/PokemonDetails';
+import PokemonDetails from './components/PokemonDetails/PokemonDetails';
 import SkeletonLoader from './components/SkeletalLoader';
 import { useNavigate, useParams } from 'react-router-dom';
 import SearchBar from './components/SearchBar';
@@ -63,6 +63,7 @@ function useGenerationOffsets() {
 
 function App() {
   const [generation, setGeneration] = useState(1);
+  const [selectedPokemon, setSelectedPokemon] = useState(null);
   const [offsets, generationData, totalGenerations, totalPokemon] = useGenerationOffsets();
   const generationOffsets = useMemo(() => offsets[generation] || [], [offsets, generation]);
   const { pokeId, genId } = useParams();
@@ -123,6 +124,8 @@ function App() {
         totalGenerations,
         generationData,
         totalPokemon,
+        selectedPokemon,
+        setSelectedPokemon,
         selectedTypes,
         handleTypeFilter,
         navigate,
@@ -130,8 +133,8 @@ function App() {
       }}
     >
       <div className="container mx-auto h-screen">
-        <div className='md:p-8 h-full flex flex-col'>
-          <div>
+        <div className='p-4 md:p-8 h-full flex flex-col'>
+          <div className='flex justify-between'>
             <a
               href="/"
               aria-label="Company"
@@ -144,12 +147,18 @@ function App() {
                 minimal pokedex
               </span>
             </a>
+
+            <div className='block md:hidden'>
+                <GenerationDropdown />
+              </div>
           </div>
 
 
-          <div className='flex flex-row items-center justify-between'>
-            <div className='flex flex-row basis-2/5 ms-2'>
-              <GenerationDropdown />
+          <div className='flex flex-col md:flex-row md:items-center justify-between'>
+            <div className='flex flex-row md:basis-2/5 ms-2 mt-3 md:mt-0'>
+              <div className='hidden md:block'>
+                <GenerationDropdown />
+              </div>
               <TypeFilter onFilter={handleTypeFilter} />
               {Object.keys(generationData).length > 0 && generation !== 'all' && (
                 <div className="flex p-2 rounded">
@@ -158,12 +167,12 @@ function App() {
                 </div>
               )}
             </div>
-            <div className="basis-3/5 px-3" >
+            <div className="basis-3/5 px-2 md:px-3" >
               <SearchBar totalPokemon={totalPokemon} />
             </div>
           </div>
 
-          <div className='flex flex-row overflow-y-auto fadeWrapper'>
+          <div className='flex flex-row overflow-y-auto md:fadeWrapper'>
             {
               generationOffsets.length > 0 ?
                 <PokemonList
@@ -177,9 +186,45 @@ function App() {
                   <SkeletonLoader />
                 </div>
             }
-            <div className="w-3/5 p-4 overflow-y-auto">
-              <PokemonDetails />
-            </div>
+            <div className="w-0 md:w-3/5 md:p-4 overflow-y-auto">
+              <div className="hidden md:block">
+                <PokemonDetails />
+              </div>
+              {selectedPokemon && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center md:hidden">
+                  <div className="absolute inset-0 bg-black opacity-50" onClick={() => setSelectedPokemon(null)}></div>
+                  <div className="relative bg-white w-11/12 max-w-md mx-auto rounded-lg shadow-lg overflow-hidden">
+                    <div className="flex justify-end pt-4 pe-4">
+                      <button
+                        className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                        onClick={() => {
+                          setSelectedPokemon(null);
+                          navigate(`/gen/${genId}`);
+                        }}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-6 w-6"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="p-4 overflow-y-scroll md:overflow-y-auto max-h-[80vh]">
+                      <PokemonDetails />
+                    </div>
+                  </div>
+                </div>
+              )}            
+              </div>
           </div>
         </div>
       </div>

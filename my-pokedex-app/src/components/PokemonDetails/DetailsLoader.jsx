@@ -1,10 +1,10 @@
 export default function DetailsLoader() {
   return (
-    <div className="grid grid-cols-5 grid-rows-5 gap-4 p-4">
-      <div className='col-span-2 row-span-2'>
+    <div className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4">
+      <div className='flex flex-col items-center md:items-start col-span-6 md:col-span-2 row-span-2'>
 
-        <div className="flex items-center mb-4">
-          <div className="skeleton w-32 h-6 mr-4 bg-gray-300" />
+        <div className="flex mb-4">
+          <div className="skeleton w-32 h-6 md:mr-4 bg-gray-300" />
         </div>
         <div className="skeleton w-32 h-32 bg-gray-300" />
       </div>

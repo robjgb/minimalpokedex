@@ -5,8 +5,8 @@ import DetailsLoader from './DetailsLoader';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
-import EvolutionTree from './PokemonDetails/EvolutionTree';
-import typeColors from './PokemonDetails/typeColors';
+import EvolutionTree from './EvolutionTree';
+import typeColors from './typeColors';
 
 function PokemonDetails() {
   const [pokemonData, setPokemonData] = useState(null);
@@ -18,6 +18,7 @@ function PokemonDetails() {
   const { pokeId } = useParams();
   const [isLoading, setIsLoading] = useState(false);
   const [evoChain, setEvoChain] = useState(null);
+  const [abilityDescriptions, setAbilityDescriptions] = useState({});
 
   const sliderSettings = {
     dots: true,
@@ -38,6 +39,7 @@ function PokemonDetails() {
       const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokeId}`);
       const pokemonData = await response.json();
       setPokemonData(pokemonData);
+      console.log(pokemonData.abilities)
 
       const speciesResponse = await fetch(pokemonData.species.url);
       const speciesData = await speciesResponse.json();
@@ -48,11 +50,21 @@ function PokemonDetails() {
       setEvoChain(evoData);
 
       setAudioSrc(pokemonData?.cries?.latest);
+
+      const descriptions = {};
+      for (const ability of pokemonData.abilities) {
+        const response = await fetch(ability.ability.url);
+        const data = await response.json();
+        const englishEntry = data.effect_entries.find((entry) => entry.language.name === 'en');
+        descriptions[ability.ability.name] = englishEntry ? englishEntry.effect : '';
+      }
+      setAbilityDescriptions(descriptions)
       setIsLoading(false);
     };
 
-    fetchPokemonDetails();
+    fetchPokemonDetails()
   }, [pokeId]);
+
 
   useEffect(() => {
     // Clear isPlaying when audio ends
@@ -79,16 +91,16 @@ function PokemonDetails() {
       .sort((a, b) => a.id - b.id)
       .forEach(({ flavor_text }) => {
         const normalizedText = flavor_text.replace(/[\n\f]/g, ' ');
-  
+
         const index = descriptions.findIndex((description) => {
           const existing = description.toLowerCase().split(' ');
           const existingFirst3words = existing.slice(0, 3).join(' ');
           const existingLast3words = existing.slice(-3).join(' ');
-  
+
           const current = normalizedText.toLowerCase().split(' ');
           const currentFirst3words = current.slice(0, 3).join(' ');
           const currentLast3words = current.slice(-3).join(' ');
-  
+
           return (
             existingFirst3words === currentFirst3words || existingLast3words === currentLast3words
           );
@@ -105,12 +117,13 @@ function PokemonDetails() {
   if (!pokemonData || !pokeId) return <p className='text-gray-600 hover:bg-gray-50 hover:text-gray-700'>search or select a pokémon to view details</p>
 
   return (
-    <div>
+    <>
       {isLoading ? (
         <DetailsLoader />
       ) : (
-        <div className="grid grid-cols-6">
-          <div className='col-span-2 row-span-2'>
+
+        <div className="grid grid-cols-1 md:grid-cols-6">
+          <div className='flex flex-col items-center md:items-start col-span-6 md:col-span-2 row-span-2'>
             <div className="flex items-center mb-4">
               <h2 className="text-2xl font-bold text-gray-800 mr-4">{pokemonData.name}</h2>
               {audioSrc && (
@@ -137,13 +150,13 @@ function PokemonDetails() {
                   <dt className="font-medium text-gray-900">description</dt>
                   <dd className="text-gray-700 sm:col-span-2">
                     <div className="relative">
-                    <Slider {...sliderSettings}>
-                      {getUniqueDescriptions(speciesData.flavor_text_entries).map((flavor_text, index) => (
-                        <div key={index}>
-                          <p>{flavor_text}</p>
-                        </div>
-                      ))}
-                    </Slider>
+                      <Slider {...sliderSettings} className='overflow-hidden'>
+                        {getUniqueDescriptions(speciesData.flavor_text_entries).map((flavor_text, index) => (
+                          <div key={index}>
+                            <p>{flavor_text}</p>
+                          </div>
+                        ))}
+                      </Slider>
                     </div>
                   </dd>
                 </div>
@@ -159,12 +172,24 @@ function PokemonDetails() {
               </div>
 
               <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                <dt className="font-medium text-gray-900">abilities</dt>
-                <dd className="text-gray-700 sm:col-span-2">{pokemonData.abilities.map(a => a.ability.name).join(', ')}</dd>
-              </div>
+            <dt className="font-medium text-gray-900">abilities</dt>
+            <dd className="text-gray-700 sm:col-span-2 flex flex-wrap">
+              {pokemonData.abilities.map((a) => (
+                <div key={a.ability.name} className="tooltip mr-2 mb-2" data-tip={abilityDescriptions[a.ability.name]}>
+                  <button
+                    className={`px-3 py-1 rounded ${
+                      a.is_hidden ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-800'
+                    }`}
+                  >
+                    {a.ability.name} {a.is_hidden && <span>*</span>}
+                  </button>
+                </div>
+              ))}
+            </dd>
+          </div>
 
               <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                <dt className="font-medium text-gray-900">types</dt>
+                <dt className="font-medium text-gray-900">type</dt>
                 <dd className="text-gray-700 sm:col-span-2 flex">{pokemonData.types.map(type =>
                   <div key={type.type.name} className='flex me-4 p-2 rounded' style={{ backgroundColor: typeColors[type.type.name] }}>
                     <img
@@ -215,7 +240,7 @@ function PokemonDetails() {
 
         </div>
       )}
-    </div>
+    </>
   );
 }
 

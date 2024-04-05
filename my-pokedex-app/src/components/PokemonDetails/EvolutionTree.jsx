@@ -155,7 +155,7 @@ export default function EvolutionTree({ evolution }) {
       };
 
       currentChunk.push(
-        <div key={index} className="flex flex-row items-center mx-2">
+        <div key={index} className="flex flex-row items-center m-4">
           {prevEvolution && (
             <div className="flex flex-wrap justify-center mx-4">
               <div className="w-24 flex flex-col items-center text-center mx-4">
@@ -227,7 +227,7 @@ export default function EvolutionTree({ evolution }) {
   return isLoading ? (
     <div className="skeleton w-32 h-32 bg-gray-300" />
   ) : (
-    <div className="flex flex-row">
+    <div className="flex flex-row max-w-[100vw] overflow-x-scroll">
       {renderEvolutionChain([evolution.chain])}
     </div>
   );
