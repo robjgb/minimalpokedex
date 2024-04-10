@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SpeakerWaveIcon } from '@heroicons/react/24/outline';
+import { SpeakerWaveIcon, StarIcon } from '@heroicons/react/24/outline';
 import { useParams } from 'react-router-dom';
 import DetailsLoader from './DetailsLoader';
 import Slider from 'react-slick';
@@ -19,6 +19,7 @@ function PokemonDetails() {
   const [isLoading, setIsLoading] = useState(false);
   const [evoChain, setEvoChain] = useState(null);
   const [abilityDescriptions, setAbilityDescriptions] = useState({});
+  const [isShiny, setIsShiny] = useState(false);
 
   const sliderSettings = {
     dots: true,
@@ -29,9 +30,14 @@ function PokemonDetails() {
     adaptiveHeight: true,
   };
 
+  const toggleShiny = () => {
+    setIsShiny(!isShiny);
+  };
+
   useEffect(() => {
     setAudioSrc(null);
     setIsPlaying(false);
+    setIsShiny(false); 
 
     const fetchPokemonDetails = async () => {
       if (!pokeId) return
@@ -39,7 +45,7 @@ function PokemonDetails() {
       const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokeId}`);
       const pokemonData = await response.json();
       setPokemonData(pokemonData);
-      console.log(pokemonData.abilities)
+      console.log(pokemonData.sprites)
 
       const speciesResponse = await fetch(pokemonData.species.url);
       const speciesData = await speciesResponse.json();
@@ -140,10 +146,20 @@ function PokemonDetails() {
                   </audio>
                 </div>
               )}
+
+              <StarIcon
+                className={`h-6 w-6 cursor-pointer ${isShiny ? 'text-yellow-400' : 'text-gray-500'}`}
+                onClick={toggleShiny}
+              />
             </div>
-            <img className="h-44 p-4" src={pokemonData.sprites.other.home.front_default} alt={pokemonData.name}
-              onMouseOver={e => (e.currentTarget.src = pokemonData.sprites.other.showdown.front_default ?? pokemonData.sprites.other["official-artwork"].front_default)}
-              onMouseOut={e => (e.currentTarget.src = pokemonData.sprites.other.home.front_default)} />
+            <img
+              className="h-44 p-4"
+              src={isShiny ? pokemonData.sprites.other.home.front_shiny : pokemonData.sprites.other.home.front_default}
+              alt={pokemonData.name}
+              onMouseOver={e => (e.currentTarget.src = isShiny ? (pokemonData.sprites.other.showdown.front_shiny || pokemonData.sprites.other["official-artwork"].front_shiny) 
+                                  : pokemonData.sprites.other.showdown.front_default || pokemonData.sprites.other["official-artwork"].front_default)}
+              onMouseOut={e => (e.currentTarget.src = isShiny ? pokemonData.sprites.other.home.front_shiny : pokemonData.sprites.other.home.front_default)}
+            />
           </div>
           <div className="col-span-4 row-span-2 col-start-3">
             <dl className="-my-3 divide-y divide-gray-100 text-sm">
@@ -174,21 +190,20 @@ function PokemonDetails() {
               </div>
 
               <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-            <dt className="font-medium text-gray-900">abilities</dt>
-            <dd className="text-gray-700 sm:col-span-2 flex flex-wrap">
-              {pokemonData.abilities.map((a) => (
-                <div key={a.ability.name} className="tooltip mr-2 mb-2" data-tip={abilityDescriptions[a.ability.name]}>
-                  <button
-                    className={`px-3 py-1 rounded ${
-                      a.is_hidden ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-800'
-                    }`}
-                  >
-                    {a.ability.name} {a.is_hidden && <span>*</span>}
-                  </button>
-                </div>
-              ))}
-            </dd>
-          </div>
+                <dt className="font-medium text-gray-900">abilities</dt>
+                <dd className="text-gray-700 sm:col-span-2 flex flex-wrap">
+                  {pokemonData.abilities.map((a) => (
+                    <div key={a.ability.name} className="tooltip mr-2 mb-2" data-tip={abilityDescriptions[a.ability.name]}>
+                      <button
+                        className={`px-3 py-1 rounded ${a.is_hidden ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-800'
+                          }`}
+                      >
+                        {a.ability.name} {a.is_hidden && <span>*</span>}
+                      </button>
+                    </div>
+                  ))}
+                </dd>
+              </div>
 
               <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
                 <dt className="font-medium text-gray-900">type</dt>
