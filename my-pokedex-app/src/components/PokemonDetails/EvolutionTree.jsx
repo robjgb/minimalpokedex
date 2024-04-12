@@ -157,7 +157,7 @@ export default function EvolutionTree({ evolution }) {
       };
 
       currentChunk.push(
-        <div key={index} className="flex flex-row items-center m-4">
+        <div key={index} className="flex flex-row items-center m-4 ms-0">
           {prevEvolution && (
             <div className="flex flex-wrap justify-center mx-4">
               <div className="w-24 flex flex-col items-center text-center mx-4">
