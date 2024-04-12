@@ -12,7 +12,8 @@ function PokemonList({ startingOffset, maxOffset}) {
     setGeneration,
     selectedPokemon, 
     setSelectedPokemon,
-    getGenIdFromPokeId
+    getGenIdFromPokeId,
+    totalPokemon 
   } = useContext(AppContext);
   const [offset, setOffset] = useState(startingOffset); 
   const [totalOffset, setTotalOffset] = useState(maxOffset);
@@ -144,6 +145,11 @@ function PokemonList({ startingOffset, maxOffset}) {
     return filteredPokemon;
   };
 
+  function formatPokemonId(id, totalPokemon) {
+    const maxLength = String(totalPokemon).length;
+    return `#${id.toString().padStart(maxLength, '0')}`;
+  }
+
   const debounce = (func, delay) => {
     let timeoutId;
     return function () {
@@ -166,7 +172,6 @@ function PokemonList({ startingOffset, maxOffset}) {
   };
 
   const debouncedHandleScroll = debounce(handleScroll, 200); // Debounce with a delay of 200 milliseconds
-
 
   useEffect(() => {
     if (listRef.current) {
@@ -207,27 +212,26 @@ function PokemonList({ startingOffset, maxOffset}) {
                 navigate(`/gen/${genId}/${id}`);
               }}
               ref={selectedPokemon === pokemon ? selectedPokemonRef : null}
-              className="cursor-pointer relative">
+              className="cursor-pointer relative mb-2">
 
               <span className="absolute inset-0 border-2 border-dashed border-gray-100 rounded-lg"></span>
 
-              <div className={`relative ${ selectedPokemon === pokemon ? " bg-gray-100": "bg-white"} border-2 border-gray-100 rounded-lg shadow-lg transition-transform duration-200 group hover:-translate-x-2 hover:-translate-y-2`}>
+              <div className={`relative ${ selectedPokemon === pokemon ? " bg-gray-100": "bg-white"} border border-gray-200 rounded-lg transition-transform duration-200 group hover:-translate-x-2 hover:-translate-y-2`}>
 
-                <div className="flex items-center p-4 pb-0">
+                <div className="flex items-center p-4">
                   <img
                     src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`}
                     alt={name}
-                    className="w-16 h-16 mr-4"
+                    className="w-24 h-24 mr-4"
                   />
 
                   <div>
-                    <h3 className="text-lg font-medium text-gray-800">{name}</h3>
-                    <p className="mt-1 text-gray-500">#{id}</p>
+                    <h3 className="text-lg font-medium text-gray-800">
+                      <span className="me-4 text-gray-500">{formatPokemonId(id, totalPokemon)}</span>
+                        {name}
+                    </h3>
+                    
                   </div>
-                </div>
-
-                <div className="p-4 opacity-0 group-hover:opacity-100 transition duration-200">
-                  <p className="font-bold text-sm text-gray-700">learn more</p>
                 </div>
 
               </div>

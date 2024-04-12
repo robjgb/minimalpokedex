@@ -20,6 +20,7 @@ function PokemonDetails() {
   const [evoChain, setEvoChain] = useState(null);
   const [abilityDescriptions, setAbilityDescriptions] = useState({});
   const [isShiny, setIsShiny] = useState(false);
+  const [weaknessData, setWeaknessData] = useState(null);
 
   const sliderSettings = {
     dots: true,
@@ -37,7 +38,7 @@ function PokemonDetails() {
   useEffect(() => {
     setAudioSrc(null);
     setIsPlaying(false);
-    setIsShiny(false); 
+    setIsShiny(false);
 
     const fetchPokemonDetails = async () => {
       if (!pokeId) return
@@ -45,7 +46,8 @@ function PokemonDetails() {
       const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokeId}`);
       const pokemonData = await response.json();
       setPokemonData(pokemonData);
-      console.log(pokemonData.sprites)
+
+      console.log(pokemonData)
 
       const speciesResponse = await fetch(pokemonData.species.url);
       const speciesData = await speciesResponse.json();
@@ -61,12 +63,38 @@ function PokemonDetails() {
       for (const ability of pokemonData.abilities) {
         const response = await fetch(ability.ability.url);
         const data = await response.json();
-        console.log(data)
 
         const englishEntry = data.effect_entries.find((entry) => entry.language.name === 'en');
         descriptions[ability.ability.name] = englishEntry ? englishEntry.short_effect : '';
       }
       setAbilityDescriptions(descriptions)
+
+      const typeEffectiveness = {};
+      for (const type of pokemonData.types) {
+        const typeResponse = await fetch(type.type.url);
+        const typeData = await typeResponse.json();
+    
+        typeData.damage_relations.double_damage_from.forEach(type => {
+          typeEffectiveness[type.name] = (typeEffectiveness[type.name] || []).concat(2);
+        });
+        typeData.damage_relations.half_damage_from.forEach(type => {
+          typeEffectiveness[type.name] = (typeEffectiveness[type.name] || []).concat(0.5);
+        });
+        typeData.damage_relations.no_damage_from.forEach(type => {
+          typeEffectiveness[type.name] = (typeEffectiveness[type.name] || []).concat(0);
+        });
+      }
+    
+      const weaknessData = {};
+      for (const [type, effectiveness] of Object.entries(typeEffectiveness)) {
+        const totalEffectiveness = effectiveness.reduce((a, b) => a * b, 1);
+        if (totalEffectiveness !== 1) {
+          weaknessData[type] = totalEffectiveness;
+        }
+      }
+    
+      setWeaknessData(weaknessData);
+
       setIsLoading(false);
     };
 
@@ -156,8 +184,8 @@ function PokemonDetails() {
               className="h-44 p-4"
               src={isShiny ? pokemonData.sprites.other.home.front_shiny : pokemonData.sprites.other.home.front_default}
               alt={pokemonData.name}
-              onMouseOver={e => (e.currentTarget.src = isShiny ? (pokemonData.sprites.other.showdown.front_shiny || pokemonData.sprites.other["official-artwork"].front_shiny) 
-                                  : pokemonData.sprites.other.showdown.front_default || pokemonData.sprites.other["official-artwork"].front_default)}
+              onMouseOver={e => (e.currentTarget.src = isShiny ? (pokemonData.sprites.other.showdown.front_shiny || pokemonData.sprites.other["official-artwork"].front_shiny)
+                : pokemonData.sprites.other.showdown.front_default || pokemonData.sprites.other["official-artwork"].front_default)}
               onMouseOut={e => (e.currentTarget.src = isShiny ? pokemonData.sprites.other.home.front_shiny : pokemonData.sprites.other.home.front_default)}
             />
           </div>
@@ -221,8 +249,35 @@ function PokemonDetails() {
                 )}</dd>
               </div>
 
+              <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+                <dt className="font-medium text-gray-900">defenses</dt>
+                <dd className="text-gray-700 sm:col-span-2 flex flex-wrap">
+                  {weaknessData &&
+                    Object.entries(weaknessData).map(([type, multiplier]) => (
+                      <div
+                        key={type}
+                        className="flex items-center mr-4 mb-2 p-2 rounded"
+                        style={{ backgroundColor: typeColors[type] }}
+                      >
+                        <img
+                          src={getTypeIconURL(type)}
+                          alt={`${type} type`}
+                          className="h-6 w-6"
+                        />
+                        <p className="mx-2 text-white">
+                          {multiplier === 0
+                            ? 'Immune'
+                            : `${multiplier}x`}
+                        </p>
+                      </div>
+                    ))}
+                </dd>
+              </div>
+
             </dl>
           </div>
+
+
 
           <div className='col-span-6 row-span-2 flex flex-col '>
             <h2 className="text-2xl font-bold text-gray-800 mb-2">stats</h2>

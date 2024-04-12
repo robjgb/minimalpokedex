@@ -1,7 +1,9 @@
 import React, { useState, useContext } from 'react';
+import { useParams } from 'react-router-dom';
 import AppContext from '../AppContext';
 
 function GenerationDropdown() {
+  const { genId } = useParams();
   const {
     generation,
     setGeneration,
@@ -13,7 +15,9 @@ function GenerationDropdown() {
 
   const handleGenerationClick = (gen) => {
     setGeneration(gen);
+    console.log(gen, generation)
     setOpen(false);
+
     if (gen === 'all') {
       navigate(`/`);
     } else {
@@ -34,11 +38,11 @@ function GenerationDropdown() {
       </button>
 
       {open && (
-        <div className="absolute z-10 mt-2 w-34 rounded-md border border-gray-100 bg-white shadow-lg" role="menu">
+        <div className="absolute z-10 mt-2 w-34 rounded-md border border-gray-200 bg-white" role="menu">
           <div className="p-2">
             <button
               onClick={() => handleGenerationClick('all')}
-              className="block rounded-lg px-4 py-2 text-sm w-full text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+              className={`block ${ generation === 'all' ? " bg-gray-100": "bg-white"} rounded-lg px-4 py-2 text-sm w-full text-gray-500 hover:bg-gray-50 hover:text-gray-700`}
               role="menuitem"
             >
               all generations
@@ -47,7 +51,7 @@ function GenerationDropdown() {
               <button
                 key={gen}
                 onClick={() => handleGenerationClick(gen)}
-                className="block rounded-lg px-4 py-2 text-sm w-full text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                className={`block ${ gen === Number(genId)   ? " bg-gray-100": "bg-white"} rounded-lg px-4 py-2 text-sm w-full text-gray-500 hover:bg-gray-50 hover:text-gray-700`}
                 role="menuitem"
               >
                 generation {gen}

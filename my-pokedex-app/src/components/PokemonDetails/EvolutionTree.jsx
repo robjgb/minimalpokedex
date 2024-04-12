@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import typeColors from './typeColors';
 import AppContext from '../../AppContext';
+import {useParams} from 'react-router-dom';
 
 export default function EvolutionTree({ evolution }) {
   const {
@@ -10,6 +11,7 @@ export default function EvolutionTree({ evolution }) {
   } = useContext(AppContext);
   const [pokemonData, setPokemonData] = useState({});
   const [isLoading, setIsLoading] = useState(true);
+  const { pokeId } = useParams();
 
   const loadEvolutionChainData = async (evolutions) => {
     const pokemonIds = evolutions.map(ev => ev.species.url.split('/').slice(-2, -1)[0]);
@@ -173,9 +175,9 @@ export default function EvolutionTree({ evolution }) {
               setGeneration(genId);
               navigate(`/gen/${genId}/${pokemonId}`);
             }}
-            className=" flex flex-col items-center cursor-pointer relative mt-2">
+            className=" flex flex-col items-center relative mt-2">
             <span className="absolute inset-0 border-2 border-dashed border-gray-100 rounded-lg"></span>
-            <div className='relative bg-white border-2 border-gray-100 shadow-lg transition-transform duration-200 group hover:-translate-x-2 hover:-translate-y-2 p-2 rounded-md flex flex-col items-center justify-center '>
+            <div className={`relative  ${ pokeId === pokemonId ? " bg-gray-100": "bg-white hover:-translate-x-2 hover:-translate-y-2 cursor-pointer"} border border-gray-200 transition-transform duration-200 group p-2 rounded-md flex flex-col items-center justify-center`}>
               <div className="w-24 h-24">
                 <img
                   src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`}

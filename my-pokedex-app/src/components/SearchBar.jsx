@@ -155,14 +155,14 @@ function SearchBar({ totalPokemon }) {
         onBlur={handleBlur}
         ref={searchInputRef}
         placeholder="Search for pokemon..."
-        className="w-full rounded-md border border-gray-200 py-2.5 px-4 pe-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
+        className="w-full rounded-md border border-gray-200 py-2.5 px-4 pe-10  focus:border-black focus:outline-none focus:ring-1 focus:ring-black sm:text-sm"
       />
 
       {/* Display the dropdown if there are results and the user is searching */}
       {showDropdown && filteredResults.length > 0 && (
         <div
           ref={dropdownRef}
-          className="absolute end-0 z-10 mt-2 w-full rounded-md border border-gray-100 bg-white shadow-lg"
+          className="absolute end-0 z-10 mt-2 w-full rounded-md border border-gray-100 bg-white"
         >
           <ul className="py-1">
             {filteredResults.map((pokemon, index) => (
