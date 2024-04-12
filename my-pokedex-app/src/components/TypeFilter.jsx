@@ -49,7 +49,7 @@ function TypeFilter({ onFilter }) {
         </button>
 
         {open && (
-        <div className="absolute z-10 mt-2 w-80 rounded-md border border-gray-100 bg-white shadow-lg" role="menu">
+        <div className="absolute z-10 mt-2 w-80 rounded-md border border-gray-200 bg-white" role="menu">
           <div className="p-2 grid grid-cols-2 gap-2">
             {types.map((type) => (
               <label key={type.name} className="block rounded-lg px-4 py-2 text-sm w-full text-gray-500 hover:bg-gray-50 hover:text-gray-700" role="menuitem">
@@ -58,7 +58,7 @@ function TypeFilter({ onFilter }) {
                   checked={selectedTypes.includes(type.name)}
                   onChange={handleTypeChange}
                   value={type.name}
-                  className="mr-2"
+                  className="mr-2 accent-black"
                 />
                 {type.name}
               </label>
