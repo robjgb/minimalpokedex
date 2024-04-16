@@ -7,6 +7,7 @@ import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import EvolutionTree from './EvolutionTree';
 import typeColors from './typeColors';
+import gameColors from './gameColors';
 
 function PokemonDetails() {
   const [pokemonData, setPokemonData] = useState(null);
@@ -21,6 +22,7 @@ function PokemonDetails() {
   const [abilityDescriptions, setAbilityDescriptions] = useState({});
   const [isShiny, setIsShiny] = useState(false);
   const [weaknessData, setWeaknessData] = useState(null);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
   const sliderSettings = {
     dots: true,
@@ -29,6 +31,9 @@ function PokemonDetails() {
     slidesToShow: 1,
     slidesToScroll: 1,
     adaptiveHeight: true,
+    beforeChange: (currentSlide, nextSlide) => {
+      setCurrentSlideIndex(nextSlide);
+    },
   };
 
   const toggleShiny = () => {
@@ -36,6 +41,7 @@ function PokemonDetails() {
   };
 
   useEffect(() => {
+    setCurrentSlideIndex(0);
     setAudioSrc(null);
     setIsPlaying(false);
     setIsShiny(false);
@@ -52,6 +58,7 @@ function PokemonDetails() {
       const speciesResponse = await fetch(pokemonData.species.url);
       const speciesData = await speciesResponse.json();
       setSpeciesData(speciesData);
+      console.log(speciesData)
 
       const evoResponse = await fetch(speciesData.evolution_chain.url);
       const evoData = await evoResponse.json();
@@ -73,7 +80,7 @@ function PokemonDetails() {
       for (const type of pokemonData.types) {
         const typeResponse = await fetch(type.type.url);
         const typeData = await typeResponse.json();
-    
+
         typeData.damage_relations.double_damage_from.forEach(type => {
           typeEffectiveness[type.name] = (typeEffectiveness[type.name] || []).concat(2);
         });
@@ -84,7 +91,7 @@ function PokemonDetails() {
           typeEffectiveness[type.name] = (typeEffectiveness[type.name] || []).concat(0);
         });
       }
-    
+
       const weaknessData = {};
       for (const [type, effectiveness] of Object.entries(typeEffectiveness)) {
         const totalEffectiveness = effectiveness.reduce((a, b) => a * b, 1);
@@ -92,7 +99,7 @@ function PokemonDetails() {
           weaknessData[type] = totalEffectiveness;
         }
       }
-    
+
       setWeaknessData(weaknessData);
 
       setIsLoading(false);
@@ -121,33 +128,25 @@ function PokemonDetails() {
   };
 
   const getUniqueDescriptions = (flavorTextEntries) => {
-    const descriptions = [];
-    flavorTextEntries
-      .filter(entry => entry.language.name === "en")
-      .sort((a, b) => a.id - b.id)
-      .forEach(({ flavor_text }) => {
-        const normalizedText = flavor_text.replace(/[\n\f]/g, ' ');
+    const uniqueDescriptions = {};
 
-        const index = descriptions.findIndex((description) => {
-          const existing = description.toLowerCase().split(' ');
-          const existingFirst3words = existing.slice(0, 3).join(' ');
-          const existingLast3words = existing.slice(-3).join(' ');
-
-          const current = normalizedText.toLowerCase().split(' ');
-          const currentFirst3words = current.slice(0, 3).join(' ');
-          const currentLast3words = current.slice(-3).join(' ');
-
-          return (
-            existingFirst3words === currentFirst3words || existingLast3words === currentLast3words
-          );
-        });
-        if (index === -1) {
-          descriptions.push(normalizedText);
+    for (const entry of flavorTextEntries) {
+      if (entry.language.name === 'en') {
+        if (uniqueDescriptions[entry.flavor_text]) {
+          uniqueDescriptions[entry.flavor_text].version_names.push(entry.version.name);
         } else {
-          descriptions[index] = normalizedText;
+          uniqueDescriptions[entry.flavor_text] = {
+            flavor_text: entry.flavor_text,
+            version_names: [entry.version.name],
+          };
         }
-      });
-    return descriptions;
+      }
+    }
+
+    return Object.values(uniqueDescriptions).map(entry => ({
+      ...entry,
+      version_names: entry.version_names.join('/'),
+    }));
   };
 
   if (!pokemonData || !pokeId) return <p className='text-gray-600 hover:bg-gray-50 hover:text-gray-700'>search or select a pokémon to view details</p>
@@ -193,13 +192,26 @@ function PokemonDetails() {
             <dl className="-my-3 divide-y divide-gray-100 text-sm">
               {speciesData && speciesData.flavor_text_entries.length > 0 && (
                 <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4 relative">
-                  <dt className="font-medium text-gray-900">description</dt>
+                  <dt className="font-medium text-gray-900">
+                    Description
+                    <p className="text-sm">
+                      {getUniqueDescriptions(speciesData.flavor_text_entries)[currentSlideIndex]?.version_names.split('/').map((version, index) => (
+                        <span
+                          key={index}
+                          style={{ color: gameColors[version.toLowerCase()] }}
+                        >
+                          {version}
+                          {index < getUniqueDescriptions(speciesData.flavor_text_entries)[currentSlideIndex]?.version_names.split('/').length - 1 ? '/' : ''}
+                        </span>
+                      ))}
+                    </p>
+                  </dt>
                   <dd className="text-gray-700 sm:col-span-2">
                     <div className="relative">
                       <Slider {...sliderSettings} className='overflow-hidden'>
-                        {getUniqueDescriptions(speciesData.flavor_text_entries).map((flavor_text, index) => (
+                        {getUniqueDescriptions(speciesData.flavor_text_entries).map((entry, index) => (
                           <div key={index}>
-                            <p>{flavor_text}</p>
+                            <p>{entry.flavor_text}</p>
                           </div>
                         ))}
                       </Slider>
