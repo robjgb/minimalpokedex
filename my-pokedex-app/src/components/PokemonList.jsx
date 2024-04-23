@@ -141,6 +141,7 @@ function PokemonList({ startingOffset, maxOffset }) {
       const newPokemonDataWithTypes = await fetchPokemonDataWithTypes(newPokemonData);
       setPokemonData([...pokemonData, ...newPokemonDataWithTypes]);
 
+      setOffset(offset + limit);
     } catch (error) {
       console.error('Error fetching Pokémon:', error);
     } finally {
