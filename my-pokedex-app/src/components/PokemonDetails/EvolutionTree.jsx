@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import typeColors from './typeColors';
+import typeColors from '../utilities/typeColors';
 import AppContext from '../../AppContext';
 import {useParams} from 'react-router-dom';
 
@@ -157,7 +157,7 @@ export default function EvolutionTree({ evolution }) {
       };
 
       currentChunk.push(
-        <div key={index} className="flex flex-row items-center m-4 ms-0">
+        <div key={index} className="flex flex-row items-center">
           {prevEvolution && (
             <div className="flex flex-wrap justify-center mx-4">
               <div className="w-24 flex flex-col items-center text-center mx-4">

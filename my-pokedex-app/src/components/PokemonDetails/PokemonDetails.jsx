@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SpeakerWaveIcon, StarIcon } from '@heroicons/react/24/outline';
 import { useParams } from 'react-router-dom';
 import DetailsLoader from './DetailsLoader';
@@ -6,8 +6,9 @@ import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import EvolutionTree from './EvolutionTree';
-import typeColors from './typeColors';
-import gameColors from './gameColors';
+import MoveSetTable from './MoveSetTable';
+import typeColors from '../utilities/typeColors';
+import gameColors from '../utilities/gameColors';
 
 function PokemonDetails() {
   const [pokemonData, setPokemonData] = useState(null);
@@ -15,7 +16,7 @@ function PokemonDetails() {
   const getTypeIconURL = (type) => `https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/${type}.svg`;
   const [audioSrc, setAudioSrc] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = React.createRef();
+  const audioRef = useRef();
   const { pokeId } = useParams();
   const [isLoading, setIsLoading] = useState(false);
   const [evoChain, setEvoChain] = useState(null);
@@ -23,6 +24,8 @@ function PokemonDetails() {
   const [isShiny, setIsShiny] = useState(false);
   const [weaknessData, setWeaknessData] = useState(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [versionGroups, setVersionGroups] = useState([]);
+  const [selectedVersionGroup, setSelectedVersionGroup] = useState(null);
 
   const sliderSettings = {
     dots: true,
@@ -41,10 +44,29 @@ function PokemonDetails() {
   };
 
   useEffect(() => {
-    setCurrentSlideIndex(0);
     setAudioSrc(null);
     setIsPlaying(false);
     setIsShiny(false);
+    setCurrentSlideIndex(0);
+
+    const fetchVersionGroups = async (url = 'https://pokeapi.co/api/v2/version-group/') => {
+      const response = await fetch(url);
+      const data = await response.json();
+    
+      if (data.next) {
+        const nextVersionGroups = await fetchVersionGroups(data.next);
+        return [...data.results, ...nextVersionGroups];
+      } else {
+        return data.results;
+      }
+    };
+    
+    fetchVersionGroups().then(versionGroups => {
+      setVersionGroups(versionGroups);
+        setSelectedVersionGroup(versionGroups[0].name);
+    });
+
+    fetchVersionGroups();
 
     const fetchPokemonDetails = async () => {
       if (!pokeId) return
@@ -53,12 +75,9 @@ function PokemonDetails() {
       const pokemonData = await response.json();
       setPokemonData(pokemonData);
 
-      console.log(pokemonData)
-
       const speciesResponse = await fetch(pokemonData.species.url);
       const speciesData = await speciesResponse.json();
       setSpeciesData(speciesData);
-      console.log(speciesData)
 
       const evoResponse = await fetch(speciesData.evolution_chain.url);
       const evoData = await evoResponse.json();
@@ -108,15 +127,6 @@ function PokemonDetails() {
     fetchPokemonDetails()
   }, [pokeId]);
 
-
-  useEffect(() => {
-    // Clear isPlaying when audio ends
-    const audio = audioRef.current;
-    if (audio) {
-      audio.onended = () => setIsPlaying(false);
-    }
-  }, [audioSrc]);
-
   const toggleAudio = () => {
     setIsPlaying(!isPlaying);
     const audio = audioRef.current;
@@ -145,7 +155,7 @@ function PokemonDetails() {
 
     return Object.values(uniqueDescriptions).map(entry => ({
       ...entry,
-      version_names: entry.version_names.join('/'),
+      version_names: entry.version_names.join('-'),
     }));
   };
 
@@ -167,7 +177,7 @@ function PokemonDetails() {
                     className={`h-6 w-6 text-gray-500 mr-2 cursor-pointer ${isPlaying ? 'text-green-500' : ''}`}
                     onClick={toggleAudio}
                   />
-                  <audio ref={audioRef} controls style={{ display: 'none' }}>
+                  <audio ref={audioRef} controls style={{ display: 'none' }} onEnded={() => setIsPlaying(false)}>
                     <source src={audioSrc} type="audio/mpeg" />
                     Your browser doesn't support the audio element.
                   </audio>
@@ -189,19 +199,19 @@ function PokemonDetails() {
             />
           </div>
           <div className="col-span-4 row-span-2 col-start-3">
-            <dl className="-my-3 divide-y divide-gray-100 text-sm">
+            <dl className="divide-y divide-gray-100 text-sm bg-white border border-gray-200 p-4 rounded">
               {speciesData && speciesData.flavor_text_entries.length > 0 && (
-                <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4 relative">
+                <div className="grid grid-cols-1 gap-1 pb-3 sm:grid-cols-3 sm:gap-4 relative">
                   <dt className="font-medium text-gray-900">
-                    Description
+                    description
                     <p className="text-sm">
-                      {getUniqueDescriptions(speciesData.flavor_text_entries)[currentSlideIndex]?.version_names.split('/').map((version, index) => (
+                      {getUniqueDescriptions(speciesData.flavor_text_entries)[currentSlideIndex]?.version_names.split('-').map((version, index) => (
                         <span
                           key={index}
                           style={{ color: gameColors[version.toLowerCase()] }}
                         >
                           {version}
-                          {index < getUniqueDescriptions(speciesData.flavor_text_entries)[currentSlideIndex]?.version_names.split('/').length - 1 ? '/' : ''}
+                          {index < getUniqueDescriptions(speciesData.flavor_text_entries)[currentSlideIndex]?.version_names.split('-').length - 1 ? '-' : ''}
                         </span>
                       ))}
                     </p>
@@ -261,41 +271,42 @@ function PokemonDetails() {
                 )}</dd>
               </div>
 
-              <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+              <div className="grid grid-cols-1 gap-1 pt-3 sm:grid-cols-3 sm:gap-4">
                 <dt className="font-medium text-gray-900">defenses</dt>
                 <dd className="text-gray-700 sm:col-span-2 flex flex-wrap">
                   {weaknessData &&
-                    Object.entries(weaknessData).map(([type, multiplier]) => (
-                      <div
-                        key={type}
-                        className="flex items-center mr-4 mb-2 p-2 rounded"
-                        style={{ backgroundColor: typeColors[type] }}
-                      >
-                        <img
-                          src={getTypeIconURL(type)}
-                          alt={`${type} type`}
-                          className="h-6 w-6"
-                        />
-                        <p className="mx-2 text-white">
-                          {multiplier === 0
-                            ? 'Immune'
-                            : `${multiplier}x`}
-                        </p>
-                      </div>
-                    ))}
+                    Object.entries(weaknessData)
+                      .sort(([, a], [, b]) => {
+                        if (a === 0) return 1;
+                        if (b === 0) return -1;
+                        return b - a;
+                      })
+                      .map(([type, multiplier]) => (
+                        <div
+                          key={type}
+                          className="flex items-center mr-4 mb-2 p-2 rounded"
+                          style={{ backgroundColor: typeColors[type] }}
+                        >
+                          <img
+                            src={getTypeIconURL(type)}
+                            alt={`${type} type`}
+                            className="h-6 w-6"
+                          />
+                          <p className="mx-2 text-white">
+                            {multiplier === 0 ? 'Immune' : `${multiplier}x`}
+                          </p>
+                        </div>
+                      ))}
                 </dd>
               </div>
-
             </dl>
           </div>
 
-
-
           <div className='col-span-6 row-span-2 flex flex-col '>
             <h2 className="text-2xl font-bold text-gray-800 mb-2">stats</h2>
-            <dl className="-my-3 divide-y divide-gray-100 text-sm">
+            <dl className="divide-y divide-gray-100 text-sm">
               <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                <dd className="text-gray-700 sm:col-span-2 space-y-4">
+                <dd className="text-gray-700 sm:col-span-2 space-y-4 border border-gray-200 p-4 rounded">
                   {pokemonData.stats.map((stat) => (
                     <div key={stat.stat.name}>
                       <div className="flex justify-between">
@@ -320,6 +331,15 @@ function PokemonDetails() {
             <h2 className="text-2xl font-bold text-gray-800 mb-2">evolutions</h2>
             {evoChain.chain.evolves_to.length == 0 && <p className='mb-4'> this pokemon does not evolve. </p>}
             <EvolutionTree evolution={evoChain} />
+          </div>
+
+          <div className='col-span-6 row-span-3 row-start-8 mt-8 flex flex-col'>
+            <MoveSetTable
+              moves={pokemonData.moves}
+              versionGroups={versionGroups}
+              selectedVersionGroup={selectedVersionGroup}
+              onVersionGroupChange={setSelectedVersionGroup}
+            />
           </div>
 
         </div>

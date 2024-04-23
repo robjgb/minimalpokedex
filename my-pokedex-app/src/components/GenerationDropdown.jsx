@@ -15,7 +15,6 @@ function GenerationDropdown() {
 
   const handleGenerationClick = (gen) => {
     setGeneration(gen);
-    console.log(gen, generation)
     setOpen(false);
 
     if (gen === 'all') {

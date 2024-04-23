@@ -3,35 +3,37 @@ import React, { useState, useEffect, useRef, useContext } from 'react';
 import SkeletonLoader from './SkeletalLoader';
 import { useParams } from 'react-router-dom';
 import AppContext from '../AppContext';
+import typeColors from './utilities/typeColors';
 
-function PokemonList({ startingOffset, maxOffset}) {
+function PokemonList({ startingOffset, maxOffset }) {
   const {
     generation,
     selectedTypes,
-    navigate, 
+    navigate,
     setGeneration,
-    selectedPokemon, 
+    selectedPokemon,
     setSelectedPokemon,
     getGenIdFromPokeId,
-    totalPokemon 
+    totalPokemon
   } = useContext(AppContext);
-  const [offset, setOffset] = useState(startingOffset); 
+  const [offset, setOffset] = useState(startingOffset);
   const [totalOffset, setTotalOffset] = useState(maxOffset);
   const [pokemonData, setPokemonData] = useState([]);
   const [loading, setLoading] = useState(false);
   const listRef = useRef(null);
   const selectedPokemonRef = useRef(null);
   const { pokeId } = useParams();
+  const getTypeIconURL = (type) => `https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/${type}.svg`;
 
   useEffect(() => {
     if (pokeId) {
       const selectedPokemon = pokemonData.find(pokemon => pokemon.url.split('/')[6] === pokeId);
-  
+
       if (selectedPokemon) {
         setSelectedPokemon(selectedPokemon);
       } else {
-        let calculatedLimit = Math.ceil((parseInt(pokeId, 10) - startingOffset) / 20)  * 20;
-        if (startingOffset + calculatedLimit > totalOffset){
+        let calculatedLimit = Math.ceil((parseInt(pokeId, 10) - startingOffset) / 20) * 20;
+        if (startingOffset + calculatedLimit > totalOffset) {
           calculatedLimit = totalOffset - startingOffset
         }
         fetchPokemonFromID(calculatedLimit);
@@ -47,25 +49,45 @@ function PokemonList({ startingOffset, maxOffset}) {
 
   useEffect(() => {
     if (selectedTypes.length > 0) {
-      if (generation !== 'all'){
+      if (generation !== 'all') {
         navigate(`/gen/${generation}`); // Update the URL
       }
       loadMoreFilteredPokemon()
     } else {
       // If no types are selected, reset the data
       setPokemonData([]); // Clear previous data 
-      setTotalOffset(maxOffset); 
+      setTotalOffset(maxOffset);
       setOffset(startingOffset)
     }
   }, [selectedTypes]); // Only trigger the effect when selectedTypes changes
 
   useEffect(() => {
-    if(offset === startingOffset) {
+    if (offset === startingOffset) {
       loadMorePokemon(); // Fetch reset data  
     }
-  }, [offset]); 
+  }, [offset]);
+
+  const fetchPokemonDataWithTypes = async (pokemonData) => {
+    try {
+      const pokemonDataWithTypes = await Promise.all(
+        pokemonData.map(async (pokemon) => {
+          const response = await fetch(pokemon.url);
+          const data = await response.json();
+          return {
+            ...pokemon,
+            types: data.types?.map((type) => type.type.name) ?? [],
+          };
+        })
+      );
+      return pokemonDataWithTypes;
+    } catch (error) {
+      console.error('Error fetching Pokémon data with types:', error);
+      return pokemonData;
+    }
+  };
 
   const loadMoreFilteredPokemon = async () => {
+    setPokemonData([]); // Clear previous data 
     setLoading(true);
     try {
       const limit = totalOffset - startingOffset;
@@ -74,9 +96,9 @@ function PokemonList({ startingOffset, maxOffset}) {
         throw new Error("Failed to fetch Pokémon");
       }
       const data = await response.json();
-      filterPokemonByTypes(data.results, selectedTypes).then((filteredPokemon) => {
-        setPokemonData(filteredPokemon);
-      });
+      const filteredPokemon = await filterPokemonByTypes(data.results, selectedTypes);
+      const filteredPokemonWithTypes = await fetchPokemonDataWithTypes(filteredPokemon);
+      setPokemonData(filteredPokemonWithTypes);
       setOffset(maxOffset)
     } catch (error) {
       console.error('Error fetching Pokémon:', error);
@@ -93,9 +115,8 @@ function PokemonList({ startingOffset, maxOffset}) {
         throw new Error("Failed to fetch Pokemon");
       }
       const data = await response.json();
-      let filteredPokemon = data.results;
-
-      setPokemonData(filteredPokemon);
+      const pokemonWithTypes = await fetchPokemonDataWithTypes(data.results);
+      setPokemonData(pokemonWithTypes);
       setOffset(startingOffset + dynamicLimit);
     } catch (error) {
       console.error('Error fetching Pokémon:', error);
@@ -106,7 +127,7 @@ function PokemonList({ startingOffset, maxOffset}) {
 
   const loadMorePokemon = async () => {
     if (offset >= totalOffset) return; // Stop loading if reached max
-  
+
     setLoading(true);
     try {
       const remainder = totalOffset - offset;
@@ -117,9 +138,8 @@ function PokemonList({ startingOffset, maxOffset}) {
       }
       const data = await response.json();
       let newPokemonData = data.results;
-  
-      setPokemonData([...pokemonData, ...newPokemonData]);
-      setOffset(prevOffset => prevOffset + limit);
+      const newPokemonDataWithTypes = await fetchPokemonDataWithTypes(newPokemonData);
+      setPokemonData([...pokemonData, ...newPokemonDataWithTypes]);
 
     } catch (error) {
       console.error('Error fetching Pokémon:', error);
@@ -136,12 +156,12 @@ function PokemonList({ startingOffset, maxOffset}) {
         return data.pokemon.map((p) => p.pokemon.name);
       })
     );
-  
+
     const filteredPokemon = pokemon.filter((p) => {
       const pokemonName = p.name;
       return typePokemonLists.every((list) => list.includes(pokemonName));
     });
-  
+
     return filteredPokemon;
   };
 
@@ -202,7 +222,7 @@ function PokemonList({ startingOffset, maxOffset}) {
         {pokemonData.map(pokemon => {
           const id = pokemon.url.split('/')[6];
           const name = pokemon.name;
-
+          const types = pokemon.types || []; // Use an empty array as default if types are not available
           return (
             <li key={id}
               onClick={() => {
@@ -216,7 +236,7 @@ function PokemonList({ startingOffset, maxOffset}) {
 
               <span className="absolute inset-0 border-2 border-dashed border-gray-100 rounded-lg"></span>
 
-              <div className={`relative ${ selectedPokemon === pokemon ? " bg-gray-100": "bg-white"} border border-gray-200 rounded-lg transition-transform duration-200 group hover:-translate-x-2 hover:-translate-y-2`}>
+              <div className={`relative ${selectedPokemon === pokemon ? " bg-gray-100" : "bg-white"} border border-gray-200 rounded-lg transition-transform duration-200 group hover:-translate-x-2 hover:-translate-y-2`}>
 
                 <div className="flex items-center p-4">
                   <img
@@ -225,13 +245,25 @@ function PokemonList({ startingOffset, maxOffset}) {
                     className="w-24 h-24 mr-4"
                   />
 
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-800">
-                      <span className="me-4 text-gray-500">{formatPokemonId(id, totalPokemon)}</span>
-                        {name}
-                    </h3>
-                    
-                  </div>
+                  <h3 className="text-lg font-medium text-gray-800">
+                    <span className="me-4 text-gray-500">{formatPokemonId(id, totalPokemon)}</span>
+                    {name}
+                  </h3>
+
+                  {pokemon.types && pokemon.types.length > 0 && (
+                    <div className="flex flex-col ml-auto">
+                      {pokemon.types.map((type) => (
+                        <div
+                          key={type}
+                          className="w-8 h-8 mb-2 last:mb-0 rounded"
+                          style={{ backgroundColor: typeColors[type] }}
+                        >
+                          <img src={getTypeIconURL(type)} alt={type} className="w-full h-full p-2" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                 </div>
 
               </div>

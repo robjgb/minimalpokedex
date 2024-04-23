@@ -174,13 +174,17 @@ function App() {
 
           <div className='flex flex-row overflow-y-auto md:fadeWrapper'>
             {
-              generationOffsets.length > 0 &&
+              generationOffsets.length > 0 ?
                 <PokemonList
                   height="fit-content"
                   key={generation}
                   startingOffset={generation === 'all' ? 0 : generationOffsets[0]}
                   maxOffset={generation === 'all' ? totalPokemon : generationOffsets[1]}
-                />
+                /> :
+                <div className="w-full md:w-2/5 overflow-y-auto">
+                  <SkeletonLoader />
+                </div>
+
             }
             <div className="w-0 md:w-3/5 md:p-4 overflow-y-auto">
               <div className="hidden md:block">
