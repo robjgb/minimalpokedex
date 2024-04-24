@@ -257,7 +257,7 @@ function PokemonList({ startingOffset, maxOffset }) {
                       {pokemon.types.map((type) => (
                         <div
                           key={type}
-                          className="w-8 h-8 mb-2 last:mb-0 rounded"
+                          className="w-8 h-8 mb-2 last:mb-0 rounded-full"
                           style={{ backgroundColor: typeColors[type] }}
                         >
                           <img src={getTypeIconURL(type)} alt={type} className="w-full h-full p-2" />

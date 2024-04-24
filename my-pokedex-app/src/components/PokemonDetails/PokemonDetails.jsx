@@ -66,15 +66,13 @@ function PokemonDetails() {
       setSelectedVersionGroup(versionGroups[0].name);
     });
 
-    fetchVersionGroups();
-
     const fetchPokemonDetails = async () => {
       if (!pokeId) return
       setIsLoading(true);
       const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokeId}`);
       const pokemonData = await response.json();
       setPokemonData(pokemonData);
-      console.log(pokemonData.moves)
+      console.log(pokemonData)
       const speciesResponse = await fetch(pokemonData.species.url);
       const speciesData = await speciesResponse.json();
       setSpeciesData(speciesData);
@@ -125,6 +123,7 @@ function PokemonDetails() {
     };
 
     fetchPokemonDetails()
+    fetchVersionGroups();
   }, [pokeId]);
 
   const toggleAudio = () => {
