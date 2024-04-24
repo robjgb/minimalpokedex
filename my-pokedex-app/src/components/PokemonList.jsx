@@ -49,9 +49,7 @@ function PokemonList({ startingOffset, maxOffset }) {
 
   useEffect(() => {
     if (selectedTypes.length > 0) {
-      if (generation !== 'all') {
-        navigate(`/gen/${generation}`); // Update the URL
-      }
+      setPokemonData([]); // Clear previous data 
       loadMoreFilteredPokemon()
     } else {
       // If no types are selected, reset the data
@@ -108,8 +106,11 @@ function PokemonList({ startingOffset, maxOffset }) {
   };
 
   const fetchPokemonFromID = async (dynamicLimit) => {
+    if (selectedTypes.length > 0) return;
+
     setLoading(true);
     try {
+      console.log('fetching from ID')
       const response = await fetch(`https://pokeapi.co/api/v2/pokemon/?offset=${startingOffset}&limit=${dynamicLimit}`);
       if (!response.ok) {
         throw new Error("Failed to fetch Pokemon");
@@ -184,7 +185,7 @@ function PokemonList({ startingOffset, maxOffset }) {
   };
 
   const handleScroll = () => {
-    if (listRef.current) {
+    if (listRef.current && selectedTypes.length === 0) {
       const { scrollTop, scrollHeight, clientHeight } = listRef.current;
       if (scrollTop + clientHeight >= scrollHeight - 5 && !loading) {
         loadMorePokemon();

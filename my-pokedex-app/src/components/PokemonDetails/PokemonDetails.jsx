@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SpeakerWaveIcon, StarIcon } from '@heroicons/react/24/outline';
+import { SpeakerWaveIcon, StarIcon, InformationCircleIcon, ChartBarSquareIcon, ScaleIcon, LightBulbIcon, MagnifyingGlassCircleIcon, ShieldExclamationIcon } from '@heroicons/react/24/outline';
 import { useParams } from 'react-router-dom';
 import DetailsLoader from './DetailsLoader';
 import Slider from 'react-slick';
@@ -52,7 +52,7 @@ function PokemonDetails() {
     const fetchVersionGroups = async (url = 'https://pokeapi.co/api/v2/version-group/') => {
       const response = await fetch(url);
       const data = await response.json();
-    
+
       if (data.next) {
         const nextVersionGroups = await fetchVersionGroups(data.next);
         return [...data.results, ...nextVersionGroups];
@@ -60,10 +60,10 @@ function PokemonDetails() {
         return data.results;
       }
     };
-    
+
     fetchVersionGroups().then(versionGroups => {
       setVersionGroups(versionGroups);
-        setSelectedVersionGroup(versionGroups[0].name);
+      setSelectedVersionGroup(versionGroups[0].name);
     });
 
     fetchVersionGroups();
@@ -74,7 +74,7 @@ function PokemonDetails() {
       const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokeId}`);
       const pokemonData = await response.json();
       setPokemonData(pokemonData);
-
+      console.log(pokemonData.moves)
       const speciesResponse = await fetch(pokemonData.species.url);
       const speciesData = await speciesResponse.json();
       setSpeciesData(speciesData);
@@ -172,7 +172,7 @@ function PokemonDetails() {
             <div className="flex items-center mb-4">
               <h2 className="text-2xl font-bold text-gray-800 mr-4">{pokemonData.name}</h2>
               {audioSrc && (
-                <div className="flex items-center">
+                <div className="flex justify-center items-center">
                   <SpeakerWaveIcon
                     className={`h-6 w-6 text-gray-500 mr-2 cursor-pointer ${isPlaying ? 'text-green-500' : ''}`}
                     onClick={toggleAudio}
@@ -189,22 +189,27 @@ function PokemonDetails() {
                 onClick={toggleShiny}
               />
             </div>
-            <img
-              className="h-44 p-4"
-              src={isShiny ? pokemonData.sprites.other.home.front_shiny : pokemonData.sprites.other.home.front_default}
-              alt={pokemonData.name}
-              onMouseOver={e => (e.currentTarget.src = isShiny ? (pokemonData.sprites.other.showdown.front_shiny || pokemonData.sprites.other["official-artwork"].front_shiny)
-                : pokemonData.sprites.other.showdown.front_default || pokemonData.sprites.other["official-artwork"].front_default)}
-              onMouseOut={e => (e.currentTarget.src = isShiny ? pokemonData.sprites.other.home.front_shiny : pokemonData.sprites.other.home.front_default)}
-            />
+            <div className='w-full flex justify-center'>
+              <img
+                className="h-60 p-4"
+                src={isShiny ? pokemonData.sprites.other.home.front_shiny : pokemonData.sprites.other.home.front_default}
+                alt={pokemonData.name}
+                onMouseOver={e => (e.currentTarget.src = isShiny ? (pokemonData.sprites.other.showdown.front_shiny || pokemonData.sprites.other["official-artwork"].front_shiny)
+                  : pokemonData.sprites.other.showdown.front_default || pokemonData.sprites.other["official-artwork"].front_default)}
+                onMouseOut={e => (e.currentTarget.src = isShiny ? pokemonData.sprites.other.home.front_shiny : pokemonData.sprites.other.home.front_default)}
+              />
+            </div>
           </div>
-          <div className="col-span-4 row-span-2 col-start-3">
+          <div className="col-span-4 row-span-2">
             <dl className="divide-y divide-gray-100 text-sm bg-white border border-gray-200 p-4 rounded">
               {speciesData && speciesData.flavor_text_entries.length > 0 && (
                 <div className="grid grid-cols-1 gap-1 pb-3 sm:grid-cols-3 sm:gap-4 relative">
-                  <dt className="font-medium text-gray-900">
-                    description
-                    <p className="text-sm">
+                  <dt className="font-medium text-gray-900 items-center">
+                    <div className='flex items-center'>
+                      <InformationCircleIcon className="h-5 w-5 inline-block mr-2" />
+                      description
+                    </div>
+                    <p className="text-sm ms-7">
                       {getUniqueDescriptions(speciesData.flavor_text_entries)[currentSlideIndex]?.version_names.split('-').map((version, index) => (
                         <span
                           key={index}
@@ -230,17 +235,32 @@ function PokemonDetails() {
                 </div>
               )}
               <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                <dt className="font-medium text-gray-900">height</dt>
+                <dt className="font-medium text-gray-900">
+                  <div className='flex items-center'>
+                    <ChartBarSquareIcon className="h-5 w-5 inline-block mr-2" />
+                    height
+                  </div>
+                </dt>
                 <dd className="text-gray-700 sm:col-span-2">{(pokemonData.height * 0.1).toFixed(2)} meters</dd>
               </div>
 
               <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                <dt className="font-medium text-gray-900">weight</dt>
+                <dt className="font-medium text-gray-900">
+                  <div className='flex items-center'>
+                    <ScaleIcon className="h-5 w-5 inline-block mr-2" />
+                    weight
+                  </div>
+                </dt>
                 <dd className="text-gray-700 sm:col-span-2">{(pokemonData.weight * 0.1).toFixed(2)} kilograms</dd>
               </div>
 
               <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                <dt className="font-medium text-gray-900">abilities</dt>
+                <dt className="font-medium text-gray-900">
+                  <div className='flex items-center'>
+                    <LightBulbIcon className="h-5 w-5 inline-block mr-2" />
+                    abilities
+                  </div>
+                </dt>
                 <dd className="text-gray-700 sm:col-span-2 flex flex-wrap">
                   {pokemonData.abilities.map((a) => (
                     <div key={a.ability.name} className="tooltip mr-2 mb-2" data-tip={abilityDescriptions[a.ability.name]}>
@@ -256,7 +276,12 @@ function PokemonDetails() {
               </div>
 
               <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                <dt className="font-medium text-gray-900">type</dt>
+                <dt className="font-medium text-gray-900">
+                  <div className='flex items-center'>
+                    <MagnifyingGlassCircleIcon className="h-5 w-5 inline-block mr-2" />
+                    type
+                  </div>
+                </dt>
                 <dd className="text-gray-700 sm:col-span-2 flex">{pokemonData.types.map(type =>
                   <div key={type.type.name} className='flex me-4 p-2 rounded' style={{ backgroundColor: typeColors[type.type.name] }}>
                     <img
@@ -272,7 +297,12 @@ function PokemonDetails() {
               </div>
 
               <div className="grid grid-cols-1 gap-1 pt-3 sm:grid-cols-3 sm:gap-4">
-                <dt className="font-medium text-gray-900">defenses</dt>
+                <dt className="font-medium text-gray-900">
+                  <div className='flex items-center'>
+                    <ShieldExclamationIcon className="h-5 w-5 inline-block mr-2" />
+                    defenses
+                  </div>
+                </dt>
                 <dd className="text-gray-700 sm:col-span-2 flex flex-wrap">
                   {weaknessData &&
                     Object.entries(weaknessData)
@@ -310,7 +340,7 @@ function PokemonDetails() {
                   {pokemonData.stats.map((stat) => (
                     <div key={stat.stat.name}>
                       <div className="flex justify-between">
-                        <span className="">{stat.stat.name}</span>
+                        <span className="mb-2">{stat.stat.name}</span>
                         <span>{stat.base_stat}</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
