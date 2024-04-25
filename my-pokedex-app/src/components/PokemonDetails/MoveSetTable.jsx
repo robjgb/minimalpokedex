@@ -74,7 +74,6 @@ const TableHeader = ({ column, sortConfig, onSort }) => {
 export default function MovesetTable({ moves, versionGroups, selectedVersionGroup, onVersionGroupChange }) {
     const [moveData, setMoveData] = useState({});
     const [isLoading, setIsLoading] = useState(true);
-    const [moveLearnMethods, setMoveLearnMethods] = useState([]);
     const [machineData, setMachineData] = useState({});
     const [filteredMoves, setFilteredMoves] = useState([]);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: '', status: 'default' });
@@ -251,8 +250,7 @@ export default function MovesetTable({ moves, versionGroups, selectedVersionGrou
         } else if (methodName === 'machine') {
             return machineData[moveName] || 'tm/hm';
         } else {
-            const learnMethod = moveLearnMethods.find((method) => method.name === methodName);
-            return learnMethod ? learnMethod.name : methodName;
+            return methodName;
         }
     };
 
