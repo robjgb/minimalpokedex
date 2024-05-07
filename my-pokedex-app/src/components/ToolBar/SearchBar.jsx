@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
-import AppContext from '../AppContext';
+import AppContext from '../../AppContext';
 
 function SearchBar({ totalPokemon }) {
   const {

@@ -4,29 +4,29 @@ export default function DetailsLoader() {
       <div className='flex flex-col items-center md:items-start col-span-6 md:col-span-2 row-span-2'>
 
         <div className="flex mb-4">
-          <div className="skeleton w-32 h-6 md:mr-4 bg-gray-300" />
+          <div className="skeleton rounded-lg w-32 h-6 md:mr-4 bg-gray-300" />
         </div>
-        <div className="skeleton w-32 h-32 bg-gray-300" />
+        <div className="skeleton rounded-lg w-32 h-32 bg-gray-300" />
       </div>
 
 
-      <div className="flow-root">
+      <div className="flow-root rounded-lg">
         <dl className="-my-3 divide-y divide-gray-100">
           <div className="grid grid-cols-1 gap-20 py-3 sm:grid-cols-3">
-            <dt className="skeleton w-16 h-6 bg-gray-300" />
-            <dd className="skeleton w-48 h-6 bg-gray-300 col-span-2" />
+            <dt className="skeleton rounded-lg w-16 h-6 bg-gray-300" />
+            <dd className="skeleton rounded-lg w-48 h-6 bg-gray-300 col-span-2" />
           </div>
           <div className="grid grid-cols-1 gap-20 py-3 sm:grid-cols-3">
-            <dt className="skeleton w-16 h-6 bg-gray-300" />
-            <dd className="skeleton w-16 h-6 bg-gray-300 col-span-2" />
+            <dt className="skeleton rounded-lg w-16 h-6 bg-gray-300" />
+            <dd className="skeleton rounded-lg w-16 h-6 bg-gray-300 col-span-2" />
           </div>
           <div className="grid grid-cols-1 gap-20 py-3 sm:grid-cols-3">
-            <dt className="skeleton w-16 h-6 bg-gray-300" />
-            <dd className="skeleton w-16 h-6 bg-gray-300 col-span-2" />
+            <dt className="skeleton rounded-lg w-16 h-6 bg-gray-300" />
+            <dd className="skeleton rounded-lg w-16 h-6 bg-gray-300 col-span-2" />
           </div>
           <div className="grid grid-cols-1 gap-20 py-3 sm:grid-cols-3">
-            <dt className="skeleton w-16 h-6 bg-gray-300" />
-            <dd className="skeleton w-32 h-6 bg-gray-300 col-span-2" />
+            <dt className="skeleton rounded-lg w-16 h-6 bg-gray-300" />
+            <dd className="skeleton rounded-lg w-32 h-6 bg-gray-300 col-span-2" />
           </div>
         </dl>
       </div>

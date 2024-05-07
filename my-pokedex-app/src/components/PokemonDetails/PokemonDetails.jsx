@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, version } from 'react';
 import { SpeakerWaveIcon, StarIcon, InformationCircleIcon, ChartBarSquareIcon, ScaleIcon, LightBulbIcon, MagnifyingGlassCircleIcon, ShieldExclamationIcon } from '@heroicons/react/24/outline';
 import { useParams } from 'react-router-dom';
 import DetailsLoader from './DetailsLoader';
@@ -9,6 +9,7 @@ import EvolutionTree from './EvolutionTree';
 import MoveSetTable from './MoveSetTable';
 import typeColors from '../utilities/typeColors';
 import gameColors from '../utilities/gameColors';
+import typeGradientColors from '../utilities/typeGradientColors';
 
 function PokemonDetails() {
   const [pokemonData, setPokemonData] = useState(null);
@@ -72,7 +73,7 @@ function PokemonDetails() {
       const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokeId}`);
       const pokemonData = await response.json();
       setPokemonData(pokemonData);
-      console.log(pokemonData)
+
       const speciesResponse = await fetch(pokemonData.species.url);
       const speciesData = await speciesResponse.json();
       setSpeciesData(speciesData);
@@ -121,9 +122,8 @@ function PokemonDetails() {
 
       setIsLoading(false);
     };
-
-    fetchPokemonDetails()
     fetchVersionGroups();
+    fetchPokemonDetails()
   }, [pokeId]);
 
   const toggleAudio = () => {
@@ -136,29 +136,44 @@ function PokemonDetails() {
     }
   };
 
-  const getUniqueDescriptions = (flavorTextEntries) => {
-    const uniqueDescriptions = {};
+  const getUniqueDescriptions = (flavorTextEntries, versionGroups) => {
+    const uniqueDescriptionsSet = new Set();
 
     for (const entry of flavorTextEntries) {
       if (entry.language.name === 'en') {
-        if (uniqueDescriptions[entry.flavor_text]) {
-          uniqueDescriptions[entry.flavor_text].version_names.push(entry.version.name);
-        } else {
-          uniqueDescriptions[entry.flavor_text] = {
-            flavor_text: entry.flavor_text,
-            version_names: [entry.version.name],
-          };
-        }
+        uniqueDescriptionsSet.add(entry.flavor_text);
       }
     }
 
-    return Object.values(uniqueDescriptions).map(entry => ({
-      ...entry,
-      version_names: entry.version_names.join('-'),
-    }));
+    const orderedDescriptions = [...uniqueDescriptionsSet].map(flavor_text => {
+      const version_names = getVersionNames(flavor_text, flavorTextEntries);
+      return {
+        flavor_text,
+        version_names: version_names.join('/')
+      };
+    });
+
+    return orderedDescriptions;
   };
 
-  if (!pokemonData || !pokeId) return <p className='text-gray-600 hover:bg-gray-50 hover:text-gray-700'>search or select a pokémon to view details</p>
+  const fetchVersionGroup = async (versionUrl) => {
+    try {
+      const response = await fetch(versionUrl);
+      const data = await response.json();
+      return data.version_group.name;
+    } catch (error) {
+      console.error("Error fetching version group:", error);
+      return null;
+    }
+  };
+
+  const getVersionNames = (flavor_text, flavorTextEntries) => {
+    return flavorTextEntries
+      .filter(entry => entry.flavor_text === flavor_text && entry.language.name === 'en')
+      .map(entry => entry.version.name);
+  };
+
+  if (!pokemonData || !pokeId) return <p className='text-gray-600 hover:bg-gray-50 hover:text-gray-700 hidden md:block'>search or select a pokémon to view details</p>
 
   return (
     <>
@@ -188,9 +203,11 @@ function PokemonDetails() {
                 onClick={toggleShiny}
               />
             </div>
-            <div className='w-full flex justify-center'>
+            <div className='w-full flex justify-center relative group'>
+              <div className={`absolute w-48 inset-12 bg-gradient-to-r ${typeGradientColors[pokemonData.types[0].type.name].from} ${pokemonData.types.length > 1 ? typeGradientColors[pokemonData.types[1].type.name].to: typeGradientColors[pokemonData.types[0].type.name].to}
+                rounded-full blur-xl opacity-40 group-hover:opacity-80 transition duration-2000 animate-pulse `}></div>
               <img
-                className="h-60 p-4"
+                className="relative w-auto h-56 p-4"
                 src={isShiny ? pokemonData.sprites.other.home.front_shiny : pokemonData.sprites.other.home.front_default}
                 alt={pokemonData.name}
                 onMouseOver={e => (e.currentTarget.src = isShiny ? (pokemonData.sprites.other.showdown.front_shiny || pokemonData.sprites.other["official-artwork"].front_shiny)
@@ -199,42 +216,40 @@ function PokemonDetails() {
               />
             </div>
           </div>
-          <div className="col-span-4 row-span-2">
+          <div className="col-span-4 row-span-2 relative">
             <dl className="divide-y divide-gray-100 text-sm bg-white border border-gray-200 p-4 rounded">
-              {speciesData && speciesData.flavor_text_entries.length > 0 && (
+              {versionGroups && speciesData && speciesData.flavor_text_entries.length > 0 && (
                 <div className="grid grid-cols-1 gap-1 pb-3 sm:grid-cols-3 sm:gap-4 relative">
-                  <dt className="font-medium text-gray-900 items-center">
+                  <dt className="font-semibold text-gray-900 items-center">
                     <div className='flex items-center'>
                       <InformationCircleIcon className="h-5 w-5 inline-block mr-2" />
                       description
                     </div>
                     <p className="text-sm ms-7">
-                      {getUniqueDescriptions(speciesData.flavor_text_entries)[currentSlideIndex]?.version_names.split('-').map((version, index) => (
+                      {getUniqueDescriptions(speciesData.flavor_text_entries, versionGroups)[currentSlideIndex]?.version_names.split('/').map((version, index) => (
                         <span
                           key={index}
                           style={{ color: gameColors[version.toLowerCase()] }}
                         >
                           {version}
-                          {index < getUniqueDescriptions(speciesData.flavor_text_entries)[currentSlideIndex]?.version_names.split('-').length - 1 ? '-' : ''}
+                          {index < getUniqueDescriptions(speciesData.flavor_text_entries, versionGroups)[currentSlideIndex]?.version_names.split('/').length - 1 ? '/' : ''}
                         </span>
                       ))}
                     </p>
                   </dt>
                   <dd className="text-gray-700 sm:col-span-2">
-                    <div className="relative">
-                      <Slider {...sliderSettings} className='overflow-hidden'>
-                        {getUniqueDescriptions(speciesData.flavor_text_entries).map((entry, index) => (
-                          <div key={index}>
-                            <p>{entry.flavor_text}</p>
-                          </div>
-                        ))}
-                      </Slider>
-                    </div>
+                    <Slider {...sliderSettings}>
+                      {getUniqueDescriptions(speciesData.flavor_text_entries, versionGroups).map((entry, index) => (
+                        <div key={index}>
+                          <p>{entry.flavor_text}</p>
+                        </div>
+                      ))}
+                    </Slider>
                   </dd>
                 </div>
               )}
               <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                <dt className="font-medium text-gray-900">
+                <dt className="font-semibold text-gray-900">
                   <div className='flex items-center'>
                     <ChartBarSquareIcon className="h-5 w-5 inline-block mr-2" />
                     height
@@ -244,7 +259,7 @@ function PokemonDetails() {
               </div>
 
               <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                <dt className="font-medium text-gray-900">
+                <dt className="font-semibold text-gray-900">
                   <div className='flex items-center'>
                     <ScaleIcon className="h-5 w-5 inline-block mr-2" />
                     weight
@@ -254,7 +269,7 @@ function PokemonDetails() {
               </div>
 
               <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                <dt className="font-medium text-gray-900">
+                <dt className="font-semibold text-gray-900">
                   <div className='flex items-center'>
                     <LightBulbIcon className="h-5 w-5 inline-block mr-2" />
                     abilities
@@ -264,7 +279,7 @@ function PokemonDetails() {
                   {pokemonData.abilities.map((a) => (
                     <div key={a.ability.name} className="tooltip mr-2 mb-2" data-tip={abilityDescriptions[a.ability.name]}>
                       <button
-                        className={`px-3 py-1 rounded ${a.is_hidden ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-800'
+                        className={`px-3 py-1 rounded ${a.is_hidden ? 'bg-black text-white' : 'bg-gray-200 text-gray-800'
                           }`}
                       >
                         {a.ability.name} {a.is_hidden && <span>*</span>}
@@ -275,7 +290,7 @@ function PokemonDetails() {
               </div>
 
               <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                <dt className="font-medium text-gray-900">
+                <dt className="font-semibold text-gray-900">
                   <div className='flex items-center'>
                     <MagnifyingGlassCircleIcon className="h-5 w-5 inline-block mr-2" />
                     type
@@ -296,7 +311,7 @@ function PokemonDetails() {
               </div>
 
               <div className="grid grid-cols-1 gap-1 pt-3 sm:grid-cols-3 sm:gap-4">
-                <dt className="font-medium text-gray-900">
+                <dt className="font-semibold text-gray-900">
                   <div className='flex items-center'>
                     <ShieldExclamationIcon className="h-5 w-5 inline-block mr-2" />
                     defenses

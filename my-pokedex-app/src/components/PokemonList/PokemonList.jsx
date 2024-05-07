@@ -2,10 +2,10 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import SkeletonLoader from './SkeletalLoader';
 import { useParams } from 'react-router-dom';
-import AppContext from '../AppContext';
-import typeColors from './utilities/typeColors';
+import AppContext from '../../AppContext';
+import typeColors from '../utilities/typeColors';
 
-function PokemonList({ startingOffset, maxOffset }) {
+function PokemonList({ startingOffset, maxOffset, listRef, isCollapsed }) {
   const {
     generation,
     selectedTypes,
@@ -20,7 +20,6 @@ function PokemonList({ startingOffset, maxOffset }) {
   const [totalOffset, setTotalOffset] = useState(maxOffset);
   const [pokemonData, setPokemonData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const listRef = useRef(null);
   const selectedPokemonRef = useRef(null);
   const { pokeId } = useParams();
   const getTypeIconURL = (type) => `https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/${type}.svg`;
@@ -110,7 +109,6 @@ function PokemonList({ startingOffset, maxOffset }) {
 
     setLoading(true);
     try {
-      console.log('fetching from ID')
       const response = await fetch(`https://pokeapi.co/api/v2/pokemon/?offset=${startingOffset}&limit=${dynamicLimit}`);
       if (!response.ok) {
         throw new Error("Failed to fetch Pokemon");
@@ -219,8 +217,8 @@ function PokemonList({ startingOffset, maxOffset }) {
   }, [selectedPokemon]);
 
   return (
-    <div className="w-full md:w-2/5 overflow-y-auto" ref={listRef}>
-      <ul className="m-2">
+    <div className="w-full overflow-y-auto" >
+      <ul className="m-2 me-4">
         {pokemonData.map(pokemon => {
           const id = pokemon.url.split('/')[6];
           const name = pokemon.name;
@@ -240,27 +238,29 @@ function PokemonList({ startingOffset, maxOffset }) {
 
               <div className={`relative ${selectedPokemon === pokemon ? " bg-gray-100" : "bg-white"} border border-gray-200 rounded-lg transition-transform duration-200 group hover:-translate-x-2 hover:-translate-y-2`}>
 
-                <div className="flex items-center p-4">
-                  <img
-                    src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`}
-                    alt={name}
-                    className="w-24 h-24 mr-4"
-                  />
+                <div className="flex flex-row items-center ">
+                  <div className="p-4">
+                    <img
+                      src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`}
+                      alt={name}
+                      className="max-w-full"
+                    />
+                  </div>
 
-                  <h3 className="text-lg font-medium text-gray-800">
-                    <span className="me-4 text-gray-500">{formatPokemonId(id, totalPokemon)}</span>
+                  {isCollapsed === false && <h3 className="text-lg font-semibold text-gray-800">
+                    <span className="me-4 text-gray-500 font-semibold">{formatPokemonId(id, totalPokemon)}</span>
                     {name}
-                  </h3>
+                  </h3>}
 
                   {pokemon.types && pokemon.types.length > 0 && (
-                    <div className="flex flex-col ml-auto">
+                    <div className="flex flex-col ml-auto p-4">
                       {pokemon.types.map((type) => (
                         <div
                           key={type}
-                          className="w-8 h-8 mb-2 last:mb-0 rounded-full"
+                          className="max-w-full mb-2 last:mb-0 rounded-full "
                           style={{ backgroundColor: typeColors[type] }}
                         >
-                          <img src={getTypeIconURL(type)} alt={type} className="w-full h-full p-2" />
+                          <img src={getTypeIconURL(type)} alt={type} className="w-8 p-2" />
                         </div>
                       ))}
                     </div>

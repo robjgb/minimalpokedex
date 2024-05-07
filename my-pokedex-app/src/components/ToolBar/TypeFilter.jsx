@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import typeColors from './utilities/typeColors';
+import typeColors from '../utilities/typeColors';
 
 function TypeFilter({ onFilter }) {
   const [types, setTypes] = useState([]);
@@ -19,7 +19,7 @@ function TypeFilter({ onFilter }) {
         throw new Error('Failed to fetch Pokemon types');
       }
       const data = await response.json();
-      const officialTypes = data.results.filter(type => !["shadow", "unknown"].includes(type.name));
+      const officialTypes = data.results.filter(type => !["shadow", "unknown", "stellar"].includes(type.name));
       setTypes(officialTypes);
     } catch (error) {
       console.error('Error fetching Pokemon types:', error);

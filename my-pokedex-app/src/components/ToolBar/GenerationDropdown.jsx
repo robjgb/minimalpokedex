@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { useParams } from 'react-router-dom';
-import AppContext from '../AppContext';
+import AppContext from '../../AppContext';
 
 function GenerationDropdown() {
   const { genId } = useParams();

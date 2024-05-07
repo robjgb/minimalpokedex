@@ -23,13 +23,13 @@ const MovesetLoader = () => {
                 <tbody className="">
                     {[...Array(3)].map((_, index) => (
                         <tr key={index} className=''>
-                            <td className=" px-4 py-2 skeleton w-8 h-6 bg-gray-300"></td>
-                            <td className=" px-4 py-2 skeleton w-32 h-6 bg-gray-300"></td>
-                            <td className=" px-4 py-2 skeleton w-16 h-6 bg-gray-300"></td>
-                            <td className=" px-4 py-2 skeleton w-16 h-6 bg-gray-300"></td>
-                            <td className=" px-4 py-2 skeleton w-16 h-6 bg-gray-300"></td>
-                            <td className=" px-4 py-2 skeleton w-16 h-6 bg-gray-300"></td>
-                            <td className="whitespace-nowrap px-4 py-2 skeleton w-8 h-6 bg-gray-300"></td>
+                            <td className=" px-4 py-2 skeleton rounded-lg w-8 h-6 bg-gray-300"></td>
+                            <td className=" px-4 py-2 skeleton rounded-lg w-32 h-6 bg-gray-300"></td>
+                            <td className=" px-4 py-2 skeleton rounded-lg w-16 h-6 bg-gray-300"></td>
+                            <td className=" px-4 py-2 skeleton rounded-lg w-16 h-6 bg-gray-300"></td>
+                            <td className=" px-4 py-2 skeleton rounded-lg w-16 h-6 bg-gray-300"></td>
+                            <td className=" px-4 py-2 skeleton rounded-lg w-16 h-6 bg-gray-300"></td>
+                            <td className="whitespace-nowrap px-4 py-2 skeleton rounded-lg w-8 h-6 bg-gray-300"></td>
                         </tr>
                     ))}
                 </tbody>
