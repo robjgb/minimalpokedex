@@ -79,3 +79,10 @@
     position: relative;
     bottom: 0;
   }
+
+  .tooltip {
+    max-width: 200px; /* Adjust the maximum width as needed */
+    white-space: pre-wrap; /* Allow line breaks */
+    word-wrap: break-word; /* Break long words if necessary */
+    z-index: 9999;
+  }

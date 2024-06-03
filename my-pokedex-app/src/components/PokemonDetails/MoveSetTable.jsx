@@ -3,7 +3,10 @@ import { ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import physicalIcon from '../../assets/move-physical.png';
 import specialIcon from '../../assets/move-special.png';
 import statusIcon from '../../assets/move-status.png';
+import typeColors from '../utilities/typeColors';
 import { ArrowsUpDownIcon, BarsArrowUpIcon, BarsArrowDownIcon } from '@heroicons/react/24/outline';
+import { Tooltip } from 'react-tooltip';
+
 
 const MovesetLoader = () => {
     return (
@@ -78,6 +81,12 @@ export default function MovesetTable({ moves, versionGroups, selectedVersionGrou
     const [filteredMoves, setFilteredMoves] = useState([]);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: '', status: 'default' });
     const [sortedMoves, setSortedMoves] = useState([]);
+    const getTypeWidth = (types) => {
+        const longestType = Object.keys(types).reduce((a, b) => (a.length > b.length ? a : b));
+        return `${longestType.length * 0.6 + 1}em`;
+    };
+    const typeWidth = getTypeWidth(typeColors);
+
 
     const columns = [
         { key: '#', label: '#' },
@@ -122,7 +131,7 @@ export default function MovesetTable({ moves, versionGroups, selectedVersionGrou
                         if (!detailsA || !detailsB) {
                             return 0;
                         }
-        
+
                         if (learnMethodA !== learnMethodB) {
                             return learnMethodA - learnMethodB;
                         }
@@ -144,7 +153,7 @@ export default function MovesetTable({ moves, versionGroups, selectedVersionGrou
                         return 0;
                 }
             });
-    
+
             if (sortConfig.status === 'default') {
                 return filteredMoves;
             } else if (sortConfig.direction === 'desc') {
@@ -152,7 +161,7 @@ export default function MovesetTable({ moves, versionGroups, selectedVersionGrou
             }
             return sorted;
         };
-    
+
         setSortedMoves(sortMoves());
     }, [filteredMoves, sortConfig, selectedVersionGroup, moveData]);
 
@@ -179,7 +188,9 @@ export default function MovesetTable({ moves, versionGroups, selectedVersionGrou
 
     const fetchMoveData = async (moveUrl) => {
         const response = await fetch(moveUrl);
-        return await response.json();
+        const data = await response.json();
+        const shortEffect = data.effect_entries.find(entry => entry.language.name === 'en')?.short_effect || '';
+        return { ...data, shortEffect };
     };
 
     const fetchMachineData = async (machineUrl) => {
@@ -335,14 +346,33 @@ export default function MovesetTable({ moves, versionGroups, selectedVersionGrou
                                     detail => detail.version_group.name === selectedVersionGroup
                                 );
                                 const data = moveData[move.move.name];
+                                console.log(typeWidth)
+
                                 return (
                                     <tr key={move.move.name}>
                                         <td className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
                                             {details && getLearnMethodDisplay(details, move.move.name)}
                                         </td>
-                                        <td className="whitespace-nowrap px-4 py-2 text-gray-700">{move.move.name}</td>
-                                        <td className="whitespace-nowrap px-4 py-2 text-gray-700">
-                                            {data?.type?.name || '-'}
+                                        <td className="whitespace-nowrap px-4 py-2">
+                                            <button
+                                                className="px-2 py-1 rounded bg-gray-200 text-black hover:bg-black hover:text-white focus:outline-none"
+                                                data-tooltip-id="move-tooltip"
+                                                data-tooltip-content={moveData[move.move.name]?.shortEffect || 'No description available'}
+                                            >
+                                                {move.move.name}
+                                            </button>
+                                        </td>
+                                        <td className="whitespace-nowrap px-4 py-2">
+                                            {data?.type?.name ? (
+                                                <span
+                                                    className="px-2 py-1 rounded text-white inline-block"
+                                                    style={{ backgroundColor: typeColors[data.type.name] || '#A8A878', width: typeWidth,}}
+                                                >
+                                                    {data.type.name}
+                                                </span>
+                                            ) : (
+                                                '-'
+                                            )}
                                         </td>
                                         <td className="whitespace-nowrap px-4 py-2 text-gray-700">
                                             {data?.damage_class?.name ? (
@@ -371,6 +401,7 @@ export default function MovesetTable({ moves, versionGroups, selectedVersionGrou
                     </table>
                 </div>
             )}
+            <Tooltip className="tooltip" id="move-tooltip" place="top" effect="solid" />
         </div>
     );
 };

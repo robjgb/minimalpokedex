@@ -4,6 +4,7 @@ import SkeletonLoader from './SkeletalLoader';
 import { useParams } from 'react-router-dom';
 import AppContext from '../../AppContext';
 import typeColors from '../utilities/typeColors';
+import { Tooltip } from 'react-tooltip';
 
 function PokemonList({ startingOffset, maxOffset, listRef, isCollapsed }) {
   const {
@@ -39,6 +40,10 @@ function PokemonList({ startingOffset, maxOffset, listRef, isCollapsed }) {
       }
     }
   }, [pokeId, pokemonData]);
+
+  useEffect(() => {
+    console.log(isCollapsed)
+  }, [isCollapsed])
 
   useEffect(() => {
     setOffset(startingOffset); // Reset offset only when startingOffset changes
@@ -184,7 +189,7 @@ function PokemonList({ startingOffset, maxOffset, listRef, isCollapsed }) {
 
   const handleScroll = () => {
     if (listRef.current && selectedTypes.length === 0) {
-      const { scrollTop, scrollHeight, clientHeight } = listRef.current;
+      const { scrollTop, scrollHeight, clientHeight } = listRef.current.getValues();
       if (scrollTop + clientHeight >= scrollHeight - 5 && !loading) {
         loadMorePokemon();
       }
@@ -195,11 +200,11 @@ function PokemonList({ startingOffset, maxOffset, listRef, isCollapsed }) {
 
   useEffect(() => {
     if (listRef.current) {
-      listRef.current.addEventListener('scroll', debouncedHandleScroll);
+      listRef.current.view.addEventListener('scroll', debouncedHandleScroll);
     }
     return () => {
       if (listRef.current) {
-        listRef.current.removeEventListener('scroll', debouncedHandleScroll);
+        listRef.current.view.removeEventListener('scroll', debouncedHandleScroll);
       }
     };
   }, [debouncedHandleScroll, listRef]);
@@ -217,7 +222,7 @@ function PokemonList({ startingOffset, maxOffset, listRef, isCollapsed }) {
   }, [selectedPokemon]);
 
   return (
-    <div className="w-full overflow-y-auto" >
+    <>
       <ul className="m-2 me-4">
         {pokemonData.map(pokemon => {
           const id = pokemon.url.split('/')[6];
@@ -232,7 +237,10 @@ function PokemonList({ startingOffset, maxOffset, listRef, isCollapsed }) {
                 navigate(`/gen/${genId}/${id}`);
               }}
               ref={selectedPokemon === pokemon ? selectedPokemonRef : null}
-              className="cursor-pointer relative mb-2">
+              className="cursor-pointer relative mb-2"
+              data-tooltip-id="pokemon-tooltip"
+              data-tooltip-content={`${formatPokemonId(id, totalPokemon)} ${name}` }
+              >
 
               <span className="absolute inset-0 border-2 border-dashed border-gray-100 rounded-lg"></span>
 
@@ -275,7 +283,8 @@ function PokemonList({ startingOffset, maxOffset, listRef, isCollapsed }) {
       </ul>
 
       {loading && <SkeletonLoader />}
-    </div>
+    <Tooltip className="tooltip" id="pokemon-tooltip" hidden={!isCollapsed} place="right" />
+    </>
   );
 }
 

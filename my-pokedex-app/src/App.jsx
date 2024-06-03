@@ -13,6 +13,8 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { Tooltip } from 'react-tooltip';
+import { Scrollbars } from 'react-custom-scrollbars-2';
 
 function useGenerationOffsets() {
   const [offsets, setOffsets] = useState({});
@@ -139,8 +141,9 @@ function App() {
         getGenIdFromPokeId
       }}
     >
+      <Tooltip id="ability-tooltip" className="tooltip" />
       <div className="lg:container lg:mx-auto h-screen">
-        <div className='py-4 lg:py-8 h-full flex flex-col'>
+        <div className='py-4 lg:py-8 h-full w-full flex flex-col'>
           <div className='flex justify-between'>
             <a
               href="/"
@@ -179,7 +182,7 @@ function App() {
             </div>
           </div>
 
-          <div className='flex flex-row overflow-y-auto lg:fadeWrapper'>
+          <div className='flex flex-row h-full w-full'>
             <ResizablePanelGroup direction="horizontal">
               <ResizablePanel
                 defaultSize={40}
@@ -188,36 +191,35 @@ function App() {
                 minSize={30}
                 maxSize={40}
                 onCollapse={(collapsed) => {
-                  setIsCollapsed(collapsed)
+                  setIsCollapsed(true)
                 }}
                 onExpand={() => {
                   setIsCollapsed(false)
                 }}
-                className={`${isCollapsed && "min-w-[50px] transition-all duration-300 ease-in-out"}`}>
-                <div className="h-full w-full overflow-y-auto" ref={listRef}>
-                  {generationOffsets.length > 0 ? (
-                    <PokemonList
-                      height="fit-content"
-                      key={generation}
-                      startingOffset={generation === 'all' ? 0 : generationOffsets[0]}
-                      maxOffset={generation === 'all' ? totalPokemon : generationOffsets[1]}
-                      listRef={listRef}
-                      isCollapsed={isCollapsed}
-                    />
-                  ) : (
-                    <div className="w-full overflow-y-auto">
-                      <SkeletonLoader className="rounded-lg" style={{ borderRadius: '0.5rem !important' }} />
-                    </div>
-                  )}
-                </div>
+                className={`${isCollapsed && "min-w-[50px] transition-all duration-300 ease-in-out"} w-full`}>
+                <Scrollbars style={{height:'100%', width:'100%'}} ref={listRef}> 
+                    {generationOffsets.length > 0 ? (
+                      <PokemonList
+                        key={generation}
+                        startingOffset={generation === 'all' ? 0 : generationOffsets[0]}
+                        maxOffset={generation === 'all' ? totalPokemon : generationOffsets[1]}
+                        listRef={listRef}
+                        isCollapsed={isCollapsed}
+                      />
+                    ) : (
+                      <div className="w-full">
+                        <SkeletonLoader className="rounded-lg" style={{ borderRadius: '0.5rem !important' }} />
+                      </div>
+                    )}
+                </Scrollbars>
               </ResizablePanel>
               <ResizableHandle className="hidden lg:flex" withHandle />
               <ResizablePanel className="hidden lg:flex">
-                <div className="h-full w-full overflow-y-auto">
+                <Scrollbars>
                   <div className="w-full p-4">
                     <PokemonDetails />
                   </div>
-                </div>
+                </Scrollbars>
               </ResizablePanel>
             </ResizablePanelGroup>
 
@@ -259,7 +261,7 @@ function App() {
 
         </div>
       </div>
-    </AppContext.Provider>
+    </AppContext.Provider >
   );
 }
 

@@ -141,7 +141,14 @@ function PokemonDetails() {
 
     for (const entry of flavorTextEntries) {
       if (entry.language.name === 'en') {
-        uniqueDescriptionsSet.add(entry.flavor_text);
+        let cleanedText = entry.flavor_text
+        .replace(/\f/g, '\n')
+        .replace(/\u00ad\n/g, '')
+        .replace(/\u00ad/g, '')
+        .replace(/ -\n/g, ' - ')
+        .replace(/-\n/g, '-')
+        .replace(/\n/g, ' ');
+        uniqueDescriptionsSet.add(cleanedText);
       }
     }
 
@@ -204,7 +211,7 @@ function PokemonDetails() {
               />
             </div>
             <div className='w-full flex justify-center relative group'>
-              <div className={`absolute w-48 inset-12 bg-gradient-to-r ${typeGradientColors[pokemonData.types[0].type.name].from} ${pokemonData.types.length > 1 ? typeGradientColors[pokemonData.types[1].type.name].to: typeGradientColors[pokemonData.types[0].type.name].to}
+              <div className={`absolute w-48 inset-12 bg-gradient-to-r ${typeGradientColors[pokemonData.types[0].type.name].from} ${pokemonData.types.length > 1 ? typeGradientColors[pokemonData.types[1].type.name].to : typeGradientColors[pokemonData.types[0].type.name].to}
                 rounded-full blur-xl opacity-40 group-hover:opacity-80 transition duration-2000 animate-pulse `}></div>
               <img
                 className="relative w-auto h-56 p-4"
@@ -277,7 +284,12 @@ function PokemonDetails() {
                 </dt>
                 <dd className="text-gray-700 sm:col-span-2 flex flex-wrap">
                   {pokemonData.abilities.map((a) => (
-                    <div key={a.ability.name} className="tooltip mr-2 mb-2" data-tip={abilityDescriptions[a.ability.name]}>
+                    <div
+                      key={a.ability.name}
+                      className="mr-2 mb-2"
+                      data-tooltip-id="ability-tooltip"
+                      data-tooltip-content={abilityDescriptions[a.ability.name]}
+                    >
                       <button
                         className={`px-3 py-1 rounded ${a.is_hidden ? 'bg-black text-white' : 'bg-gray-200 text-gray-800'
                           }`}
