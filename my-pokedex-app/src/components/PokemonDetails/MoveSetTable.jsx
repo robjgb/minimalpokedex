@@ -6,7 +6,7 @@ import statusIcon from '../../assets/move-status.png';
 import typeColors from '../utilities/typeColors';
 import { ArrowsUpDownIcon, BarsArrowUpIcon, BarsArrowDownIcon } from '@heroicons/react/24/outline';
 import { Tooltip } from 'react-tooltip';
-
+import { Scrollbars } from 'react-custom-scrollbars-2';
 
 const MovesetLoader = () => {
     return (
@@ -86,6 +86,7 @@ export default function MovesetTable({ moves, versionGroups, selectedVersionGrou
         return `${longestType.length * 0.6 + 1}em`;
     };
     const typeWidth = getTypeWidth(typeColors);
+    const [error, setError] = useState(null);
 
 
     const columns = [
@@ -187,70 +188,101 @@ export default function MovesetTable({ moves, versionGroups, selectedVersionGrou
     };
 
     const fetchMoveData = async (moveUrl) => {
-        const response = await fetch(moveUrl);
-        const data = await response.json();
-        const shortEffect = data.effect_entries.find(entry => entry.language.name === 'en')?.short_effect || '';
-        return { ...data, shortEffect };
+        try {
+            const response = await fetch(moveUrl);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            const shortEffect = data.effect_entries.find(entry => entry.language.name === 'en')?.short_effect || '';
+            return { ...data, shortEffect };
+        } catch (error) {
+            console.error("Failed to fetch move data:", error);
+            return null;
+        }
     };
 
     const fetchMachineData = async (machineUrl) => {
-        const response = await fetch(machineUrl);
-        const machineInfo = await response.json();
-        return machineInfo.item.name;
+        try {
+            const response = await fetch(machineUrl);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const machineInfo = await response.json();
+            return machineInfo.item.name;
+        } catch (error) {
+            console.error("Failed to fetch machine data:", error);
+            return null;
+        }
     };
 
     useEffect(() => {
         const fetchData = async () => {
             setSortConfig({ key: null, direction: '', status: 'default' });
             setIsLoading(true);
-
+            setError(null);
+    
             const filteredMovesData = moves.filter(move =>
                 move.version_group_details.some(detail => detail.version_group.name === selectedVersionGroup)
             );
-
-            const moveDataPromises = filteredMovesData.map(move => fetchMoveData(move.move.url));
+    
+            const moveDataPromises = filteredMovesData.map(async (move) => {
+                try {
+                    const data = await fetchMoveData(move.move.url);
+                    return data ? { ...move, data } : null;
+                } catch (error) {
+                    console.error(`Failed to fetch move data for ${move.move.name}:`, error);
+                    return null;
+                }
+            });
+    
             const moveDataArray = await Promise.all(moveDataPromises);
-
-            const moveDataObject = moveDataArray.reduce((acc, data, index) => {
-                acc[filteredMovesData[index].move.name] = data;
+            const validMoveData = moveDataArray.filter(move => move !== null);
+    
+            const moveDataObject = validMoveData.reduce((acc, move) => {
+                acc[move.move.name] = move.data;
                 return acc;
             }, {});
-
-            const machineDataPromises = filteredMovesData.map(move => {
+    
+            const machineDataPromises = validMoveData.map(async (move) => {
                 const details = move.version_group_details.find(
                     detail => detail.version_group.name === selectedVersionGroup
                 );
                 const data = moveDataObject[move.move.name];
-
-                if (details.move_learn_method.name === 'machine') {
-                    const machine = data?.machines?.find(
+    
+                if (details.move_learn_method.name === 'machine' && data?.machines) {
+                    const machine = data.machines.find(
                         machine => machine.version_group.name === selectedVersionGroup
                     );
                     if (machine) {
-                        return fetchMachineData(machine.machine.url);
+                        try {
+                            const machineData = await fetchMachineData(machine.machine.url);
+                            return machineData ? { moveName: move.move.name, machineData } : null;
+                        } catch (error) {
+                            console.error(`Failed to fetch machine data for ${move.move.name}:`, error);
+                            return null;
+                        }
                     }
                 }
-                return Promise.resolve(null);
+                return null;
             });
-
+    
             const machineDataArray = await Promise.all(machineDataPromises);
-
-            const machineDataObject = machineDataArray.reduce((acc, data, index) => {
-                if (data) {
-                    acc[filteredMovesData[index].move.name] = data;
-                }
+            const validMachineData = machineDataArray.filter(data => data !== null);
+    
+            const machineDataObject = validMachineData.reduce((acc, data) => {
+                acc[data.moveName] = data.machineData;
                 return acc;
             }, {});
-
-            setFilteredMoves(filteredMovesData);
+    
+            setFilteredMoves(validMoveData);
             setMoveData(moveDataObject);
             setMachineData(machineDataObject);
             setIsLoading(false);
         };
-
+    
         fetchData();
     }, [moves, selectedVersionGroup]);
-
 
     const getLearnMethodDisplay = (details, moveName) => {
         const { move_learn_method } = details;
@@ -346,7 +378,6 @@ export default function MovesetTable({ moves, versionGroups, selectedVersionGrou
                                     detail => detail.version_group.name === selectedVersionGroup
                                 );
                                 const data = moveData[move.move.name];
-                                console.log(typeWidth)
 
                                 return (
                                     <tr key={move.move.name}>

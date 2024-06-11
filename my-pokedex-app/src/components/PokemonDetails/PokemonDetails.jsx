@@ -27,6 +27,8 @@ function PokemonDetails() {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [versionGroups, setVersionGroups] = useState([]);
   const [selectedVersionGroup, setSelectedVersionGroup] = useState(null);
+  const [uniqueDescriptions, setUniqueDescriptions] = useState([]);
+  const [evYield, setEvYield] = useState(null);
 
   const sliderSettings = {
     dots: true,
@@ -73,10 +75,12 @@ function PokemonDetails() {
       const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokeId}`);
       const pokemonData = await response.json();
       setPokemonData(pokemonData);
+      console.log(pokemonData)
 
       const speciesResponse = await fetch(pokemonData.species.url);
       const speciesData = await speciesResponse.json();
       setSpeciesData(speciesData);
+      setUniqueDescriptions(getUniqueDescriptions(speciesData.flavor_text_entries));
 
       const evoResponse = await fetch(speciesData.evolution_chain.url);
       const evoData = await evoResponse.json();
@@ -84,44 +88,58 @@ function PokemonDetails() {
 
       setAudioSrc(pokemonData?.cries?.latest);
 
-      const descriptions = {};
-      for (const ability of pokemonData.abilities) {
+      // Fetch ability descriptions in parallel
+      const abilityPromises = pokemonData.abilities.map(async (ability) => {
         const response = await fetch(ability.ability.url);
         const data = await response.json();
-
         const englishEntry = data.effect_entries.find((entry) => entry.language.name === 'en');
-        descriptions[ability.ability.name] = englishEntry ? englishEntry.short_effect : '';
-      }
-      setAbilityDescriptions(descriptions)
+        return { name: ability.ability.name, description: englishEntry ? englishEntry.short_effect : '' };
+      });
 
-      const typeEffectiveness = {};
-      for (const type of pokemonData.types) {
+      const abilityResults = await Promise.all(abilityPromises);
+      const descriptions = Object.fromEntries(abilityResults.map(({ name, description }) => [name, description]));
+      setAbilityDescriptions(descriptions);
+
+      // Fetch type data in parallel
+      const typePromises = pokemonData.types.map(async (type) => {
         const typeResponse = await fetch(type.type.url);
         const typeData = await typeResponse.json();
+        return typeData.damage_relations;
+      });
 
-        typeData.damage_relations.double_damage_from.forEach(type => {
+      const typeResults = await Promise.all(typePromises);
+      const typeEffectiveness = {};
+
+      typeResults.forEach((damageRelations) => {
+        damageRelations.double_damage_from.forEach(type => {
           typeEffectiveness[type.name] = (typeEffectiveness[type.name] || []).concat(2);
         });
-        typeData.damage_relations.half_damage_from.forEach(type => {
+        damageRelations.half_damage_from.forEach(type => {
           typeEffectiveness[type.name] = (typeEffectiveness[type.name] || []).concat(0.5);
         });
-        typeData.damage_relations.no_damage_from.forEach(type => {
+        damageRelations.no_damage_from.forEach(type => {
           typeEffectiveness[type.name] = (typeEffectiveness[type.name] || []).concat(0);
         });
-      }
+      });
 
-      const weaknessData = {};
+      const calculatedWeaknessData = {};
       for (const [type, effectiveness] of Object.entries(typeEffectiveness)) {
         const totalEffectiveness = effectiveness.reduce((a, b) => a * b, 1);
         if (totalEffectiveness !== 1) {
-          weaknessData[type] = totalEffectiveness;
+          calculatedWeaknessData[type] = totalEffectiveness;
         }
       }
 
-      setWeaknessData(weaknessData);
+      setWeaknessData(calculatedWeaknessData);
+
+      const evYieldData = pokemonData.stats.reduce((yields, stat) => {
+        return yields + (stat.effort > 0 ? `${stat.effort} ${stat.stat.name}, ` : '');
+      }, '').slice(0, -2);
+      setEvYield(evYieldData || 'None');
 
       setIsLoading(false);
     };
+
     fetchVersionGroups();
     fetchPokemonDetails()
   }, [pokeId]);
@@ -136,24 +154,24 @@ function PokemonDetails() {
     }
   };
 
-  const getUniqueDescriptions = (flavorTextEntries, versionGroups) => {
+  const getUniqueDescriptions = (flavorTextEntries) => {
     const uniqueDescriptionsSet = new Set();
 
     for (const entry of flavorTextEntries) {
       if (entry.language.name === 'en') {
-        let cleanedText = entry.flavor_text
+        uniqueDescriptionsSet.add(entry.flavor_text);
+      }
+    }
+
+    const orderedDescriptions = [...uniqueDescriptionsSet].map(flavor_text => {
+      const version_names = getVersionNames(flavor_text, flavorTextEntries);
+      flavor_text = flavor_text
         .replace(/\f/g, '\n')
         .replace(/\u00ad\n/g, '')
         .replace(/\u00ad/g, '')
         .replace(/ -\n/g, ' - ')
         .replace(/-\n/g, '-')
         .replace(/\n/g, ' ');
-        uniqueDescriptionsSet.add(cleanedText);
-      }
-    }
-
-    const orderedDescriptions = [...uniqueDescriptionsSet].map(flavor_text => {
-      const version_names = getVersionNames(flavor_text, flavorTextEntries);
       return {
         flavor_text,
         version_names: version_names.join('/')
@@ -161,17 +179,6 @@ function PokemonDetails() {
     });
 
     return orderedDescriptions;
-  };
-
-  const fetchVersionGroup = async (versionUrl) => {
-    try {
-      const response = await fetch(versionUrl);
-      const data = await response.json();
-      return data.version_group.name;
-    } catch (error) {
-      console.error("Error fetching version group:", error);
-      return null;
-    }
   };
 
   const getVersionNames = (flavor_text, flavorTextEntries) => {
@@ -210,8 +217,8 @@ function PokemonDetails() {
                 onClick={toggleShiny}
               />
             </div>
-            <div className='w-full flex justify-center relative group'>
-              <div className={`absolute w-48 inset-12 bg-gradient-to-r ${typeGradientColors[pokemonData.types[0].type.name].from} ${pokemonData.types.length > 1 ? typeGradientColors[pokemonData.types[1].type.name].to : typeGradientColors[pokemonData.types[0].type.name].to}
+            <div className='w-full flex justify-center relative group items-center'>
+              <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 inset-10 bg-gradient-to-r ${typeGradientColors[pokemonData.types[0].type.name].from} ${pokemonData.types.length > 1 ? typeGradientColors[pokemonData.types[1].type.name].to : typeGradientColors[pokemonData.types[0].type.name].to}
                 rounded-full blur-xl opacity-40 group-hover:opacity-80 transition duration-2000 animate-pulse `}></div>
               <img
                 className="relative w-auto h-56 p-4"
@@ -225,7 +232,7 @@ function PokemonDetails() {
           </div>
           <div className="col-span-4 row-span-2 relative">
             <dl className="divide-y divide-gray-100 text-sm bg-white border border-gray-200 p-4 rounded">
-              {versionGroups && speciesData && speciesData.flavor_text_entries.length > 0 && (
+              {versionGroups && speciesData && uniqueDescriptions.length > 0 && (
                 <div className="grid grid-cols-1 gap-1 pb-3 sm:grid-cols-3 sm:gap-4 relative">
                   <dt className="font-semibold text-gray-900 items-center">
                     <div className='flex items-center'>
@@ -233,20 +240,21 @@ function PokemonDetails() {
                       description
                     </div>
                     <p className="text-sm ms-7">
-                      {getUniqueDescriptions(speciesData.flavor_text_entries, versionGroups)[currentSlideIndex]?.version_names.split('/').map((version, index) => (
+                      {uniqueDescriptions[currentSlideIndex]?.version_names.split('/').map((version, index) => (
                         <span
+                          className='inline-block'
                           key={index}
                           style={{ color: gameColors[version.toLowerCase()] }}
                         >
                           {version}
-                          {index < getUniqueDescriptions(speciesData.flavor_text_entries, versionGroups)[currentSlideIndex]?.version_names.split('/').length - 1 ? '/' : ''}
+                          {index < uniqueDescriptions[currentSlideIndex]?.version_names.split('/').length - 1 ? '/' : ''}
                         </span>
                       ))}
                     </p>
                   </dt>
                   <dd className="text-gray-700 sm:col-span-2">
                     <Slider {...sliderSettings}>
-                      {getUniqueDescriptions(speciesData.flavor_text_entries, versionGroups).map((entry, index) => (
+                      {getUniqueDescriptions(speciesData.flavor_text_entries).map((entry, index) => (
                         <div key={index}>
                           <p>{entry.flavor_text}</p>
                         </div>
@@ -358,30 +366,83 @@ function PokemonDetails() {
             </dl>
           </div>
 
-          <div className='col-span-6 row-span-2 flex flex-col '>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">stats</h2>
-            <dl className="divide-y divide-gray-100 text-sm">
-              <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                <dd className="text-gray-700 sm:col-span-2 space-y-4 border border-gray-200 p-4 rounded">
-                  {pokemonData.stats.map((stat) => (
-                    <div key={stat.stat.name}>
-                      <div className="flex justify-between">
-                        <span className="mb-2">{stat.stat.name}</span>
-                        <span>{stat.base_stat}</span>
+          <div className='col-span-6 row-span-2 flex flex-col md:flex-row mt-4'>
+            <div className="w-full md:w-1/2 pr-0 md:pr-2">
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">stats</h2>
+              <dl className="divide-y divide-gray-100 text-sm">
+                <div className="grid grid-cols-3 gap-1 py-3 sm:gap-4">
+                  <dd className="text-gray-700 col-span-3 space-y-4 border border-gray-200 p-4 rounded">
+                    {pokemonData.stats.map((stat) => (
+                      <div key={stat.stat.name}>
+                        <div className="flex justify-between">
+                          <span className="mb-2">{stat.stat.name}</span>
+                          <span>{stat.base_stat}</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                          <div
+                            className="bg-black h-2.5 rounded-full progress-bar"
+                            style={{ '--progress-width': `${(stat.base_stat / 255) * 100}%` }}
+                          ></div>
+                        </div>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                        <div
-                          className="bg-black h-2.5 rounded-full progress-bar"
-                          style={{ '--progress-width': `${(stat.base_stat / 255) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
-                </dd>
-              </div>
-            </dl>
-          </div>
+                    ))}
+                  </dd>
+                </div>
+              </dl>
+            </div>
 
+            <div className="w-full md:w-1/2 mt-4 md:mt-0 md:pl-2">
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">attributes</h2>
+              <dl className="divide-y divide-gray-100 text-sm bg-white border border-gray-200 p-4 rounded">
+                {speciesData.habitat && (
+                  <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+                    <dt className="font-semibold text-gray-900">habitat</dt>
+                    <dd className="text-gray-700 sm:col-span-2">{speciesData.habitat.name}</dd>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+                  <dt className="font-semibold text-gray-900">capture rate</dt>
+                  <dd className="text-gray-700 sm:col-span-2">{speciesData.capture_rate}</dd>
+                </div>
+
+                <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+                  <dt className="font-semibold text-gray-900">growth rate</dt>
+                  <dd className="text-gray-700 sm:col-span-2">{speciesData.growth_rate.name}</dd>
+                </div>
+
+                <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+                  <dt className="font-semibold text-gray-900">EV yield</dt>
+                  <dd className="text-gray-700 sm:col-span-2">{evYield}</dd>
+                </div>
+
+                <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+                  <dt className="font-semibold text-gray-900">base exp</dt>
+                  <dd className="text-gray-700 sm:col-span-2">{pokemonData.base_experience}</dd>
+                </div>
+
+                <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+                  <dt className="font-semibold text-gray-900">base happiness</dt>
+                  <dd className="text-gray-700 sm:col-span-2">{speciesData.base_happiness}</dd>
+                </div>
+              </dl>
+
+              <h2 className="text-2xl font-bold text-gray-800 mb-2 mt-6">breeding</h2>
+              <dl className="divide-y divide-gray-100 text-sm bg-white border border-gray-200 p-4 rounded">
+                <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+                  <dt className="font-semibold text-gray-900">egg groups</dt>
+                  <dd className="text-gray-700 sm:col-span-2">
+                    {speciesData.egg_groups.map(group => group.name).join(', ')}
+                  </dd>
+                </div>
+
+                <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+                  <dt className="font-semibold text-gray-900">egg cycle</dt>
+                  <dd className="text-gray-700 sm:col-span-2">{speciesData.hatch_counter * 255} steps</dd>
+                </div>
+              </dl>
+            </div>
+          </div>
 
           <div className='col-span-6 row-span-3 row-start-5 mt-8 flex flex-col'>
             <h2 className="text-2xl font-bold text-gray-800 mb-2">evolutions</h2>

@@ -197,7 +197,7 @@ function App() {
                   setIsCollapsed(false)
                 }}
                 className={`${isCollapsed && "min-w-[50px] transition-all duration-300 ease-in-out"} w-full`}>
-                <Scrollbars style={{height:'100%', width:'100%'}} ref={listRef}> 
+                <Scrollbars autoHide style={{height:'100%', width:'100%'}} ref={listRef}> 
                     {generationOffsets.length > 0 ? (
                       <PokemonList
                         key={generation}
@@ -215,7 +215,7 @@ function App() {
               </ResizablePanel>
               <ResizableHandle className="hidden lg:flex" withHandle />
               <ResizablePanel className="hidden lg:flex">
-                <Scrollbars>
+                <Scrollbars autoHide>
                   <div className="w-full p-4">
                     <PokemonDetails />
                   </div>

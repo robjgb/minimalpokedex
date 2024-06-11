@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import typeColors from '../utilities/typeColors';
 import AppContext from '../../AppContext';
 import { useParams } from 'react-router-dom';
+import { Scrollbars } from 'react-custom-scrollbars-2';
 
 export default function EvolutionTree({ evolution }) {
   const {
@@ -275,8 +276,10 @@ export default function EvolutionTree({ evolution }) {
   return isLoading ? (
     <div className="skeleton w-32 h-32 bg-gray-300" />
   ) : (
-    <div className="flex flex-row max-w-[100vw] overflow-x-scroll">
+    <Scrollbars autoHide autoHeight autoHeightMax={Number.MAX_VALUE}>
+    <div className="flex flex-row max-w-[100vw]">
       {renderEvolutionChain([evolution.chain])}
     </div>
+    </Scrollbars>
   );
 };
