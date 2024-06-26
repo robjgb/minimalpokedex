@@ -10,6 +10,7 @@ import MoveSetTable from './MoveSetTable';
 import typeColors from '../utilities/typeColors';
 import gameColors from '../utilities/gameColors';
 import typeGradientColors from '../utilities/typeGradientColors';
+import { useNavigate } from 'react-router-dom';
 
 function PokemonDetails() {
   const [pokemonData, setPokemonData] = useState(null);
@@ -18,7 +19,6 @@ function PokemonDetails() {
   const [audioSrc, setAudioSrc] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef();
-  const { pokeId } = useParams();
   const [isLoading, setIsLoading] = useState(false);
   const [evoChain, setEvoChain] = useState(null);
   const [abilityDescriptions, setAbilityDescriptions] = useState({});
@@ -29,6 +29,10 @@ function PokemonDetails() {
   const [selectedVersionGroup, setSelectedVersionGroup] = useState(null);
   const [uniqueDescriptions, setUniqueDescriptions] = useState([]);
   const [evYield, setEvYield] = useState(null);
+  const [forms, setForms] = useState([]);
+  const { pokeId, formId, genId } = useParams();
+  const navigate = useNavigate();
+
 
   const sliderSettings = {
     dots: true,
@@ -72,15 +76,26 @@ function PokemonDetails() {
     const fetchPokemonDetails = async () => {
       if (!pokeId) return
       setIsLoading(true);
-      const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokeId}`);
-      const pokemonData = await response.json();
-      setPokemonData(pokemonData);
-      console.log(pokemonData)
 
-      const speciesResponse = await fetch(pokemonData.species.url);
+      // Fetch species data first
+      const speciesResponse = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${pokeId}`);
       const speciesData = await speciesResponse.json();
       setSpeciesData(speciesData);
       setUniqueDescriptions(getUniqueDescriptions(speciesData.flavor_text_entries));
+
+      // Set forms
+      setForms(speciesData.varieties);
+
+      // Determine which form to fetch
+      const formToFetch = formId
+        ? speciesData.varieties.find(v => v.pokemon.name === formId)?.pokemon.url
+        : `https://pokeapi.co/api/v2/pokemon/${pokeId}`;
+
+      // Fetch Pokemon data
+      const response = await fetch(formToFetch);
+      const pokemonData = await response.json();
+      // console.log(pokemonData);
+      setPokemonData(pokemonData);
 
       const evoResponse = await fetch(speciesData.evolution_chain.url);
       const evoData = await evoResponse.json();
@@ -142,7 +157,7 @@ function PokemonDetails() {
 
     fetchVersionGroups();
     fetchPokemonDetails()
-  }, [pokeId]);
+  }, [pokeId, formId]);
 
   const toggleAudio = () => {
     setIsPlaying(!isPlaying);
@@ -195,269 +210,295 @@ function PokemonDetails() {
         <DetailsLoader />
       ) : (
 
-        <div className="grid grid-cols-1 md:grid-cols-6">
-          <div className='flex flex-col items-center md:items-start col-span-6 md:col-span-2 row-span-2'>
-            <div className="flex items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-800 mr-4">{pokemonData.name}</h2>
-              {audioSrc && (
-                <div className="flex justify-center items-center">
-                  <SpeakerWaveIcon
-                    className={`h-6 w-6 text-gray-500 mr-2 cursor-pointer ${isPlaying ? 'text-green-500' : ''}`}
-                    onClick={toggleAudio}
-                  />
-                  <audio ref={audioRef} controls style={{ display: 'none' }} onEnded={() => setIsPlaying(false)}>
-                    <source src={audioSrc} type="audio/mpeg" />
-                    Your browser doesn't support the audio element.
-                  </audio>
-                </div>
-              )}
-
-              <StarIcon
-                className={`h-6 w-6 cursor-pointer ${isShiny ? 'text-yellow-400' : 'text-gray-500'}`}
-                onClick={toggleShiny}
-              />
-            </div>
-            <div className='w-full flex justify-center relative group items-center'>
-              <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 inset-10 bg-gradient-to-r ${typeGradientColors[pokemonData.types[0].type.name].from} ${pokemonData.types.length > 1 ? typeGradientColors[pokemonData.types[1].type.name].to : typeGradientColors[pokemonData.types[0].type.name].to}
-                rounded-full blur-xl opacity-40 group-hover:opacity-80 transition duration-2000 animate-pulse `}></div>
-              <img
-                className="relative w-auto h-56 p-4"
-                src={isShiny ? pokemonData.sprites.other.home.front_shiny : pokemonData.sprites.other.home.front_default}
-                alt={pokemonData.name}
-                onMouseOver={e => (e.currentTarget.src = isShiny ? (pokemonData.sprites.other.showdown.front_shiny || pokemonData.sprites.other["official-artwork"].front_shiny)
-                  : pokemonData.sprites.other.showdown.front_default || pokemonData.sprites.other["official-artwork"].front_default)}
-                onMouseOut={e => (e.currentTarget.src = isShiny ? pokemonData.sprites.other.home.front_shiny : pokemonData.sprites.other.home.front_default)}
-              />
-            </div>
-          </div>
-          <div className="col-span-4 row-span-2 relative">
-            <dl className="divide-y divide-gray-100 text-sm bg-white border border-gray-200 p-4 rounded">
-              {versionGroups && speciesData && uniqueDescriptions.length > 0 && (
-                <div className="grid grid-cols-1 gap-1 pb-3 sm:grid-cols-3 sm:gap-4 relative">
-                  <dt className="font-semibold text-gray-900 items-center">
-                    <div className='flex items-center'>
-                      <InformationCircleIcon className="h-5 w-5 inline-block mr-2" />
-                      description
-                    </div>
-                    <p className="text-sm ms-7">
-                      {uniqueDescriptions[currentSlideIndex]?.version_names.split('/').map((version, index) => (
-                        <span
-                          className='inline-block'
-                          key={index}
-                          style={{ color: gameColors[version.toLowerCase()] }}
-                        >
-                          {version}
-                          {index < uniqueDescriptions[currentSlideIndex]?.version_names.split('/').length - 1 ? '/' : ''}
-                        </span>
-                      ))}
-                    </p>
-                  </dt>
-                  <dd className="text-gray-700 sm:col-span-2">
-                    <Slider {...sliderSettings}>
-                      {getUniqueDescriptions(speciesData.flavor_text_entries).map((entry, index) => (
-                        <div key={index}>
-                          <p>{entry.flavor_text}</p>
-                        </div>
-                      ))}
-                    </Slider>
-                  </dd>
-                </div>
-              )}
-              <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                <dt className="font-semibold text-gray-900">
-                  <div className='flex items-center'>
-                    <ChartBarSquareIcon className="h-5 w-5 inline-block mr-2" />
-                    height
-                  </div>
-                </dt>
-                <dd className="text-gray-700 sm:col-span-2">{(pokemonData.height * 0.1).toFixed(2)} meters</dd>
-              </div>
-
-              <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                <dt className="font-semibold text-gray-900">
-                  <div className='flex items-center'>
-                    <ScaleIcon className="h-5 w-5 inline-block mr-2" />
-                    weight
-                  </div>
-                </dt>
-                <dd className="text-gray-700 sm:col-span-2">{(pokemonData.weight * 0.1).toFixed(2)} kilograms</dd>
-              </div>
-
-              <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                <dt className="font-semibold text-gray-900">
-                  <div className='flex items-center'>
-                    <LightBulbIcon className="h-5 w-5 inline-block mr-2" />
-                    abilities
-                  </div>
-                </dt>
-                <dd className="text-gray-700 sm:col-span-2 flex flex-wrap">
-                  {pokemonData.abilities.map((a) => (
-                    <div
-                      key={a.ability.name}
-                      className="mr-2 mb-2"
-                      data-tooltip-id="ability-tooltip"
-                      data-tooltip-content={abilityDescriptions[a.ability.name]}
-                    >
-                      <button
-                        className={`px-3 py-1 rounded ${a.is_hidden ? 'bg-black text-white' : 'bg-gray-200 text-gray-800'
-                          }`}
-                      >
-                        {a.ability.name} {a.is_hidden && <span>*</span>}
-                      </button>
-                    </div>
-                  ))}
-                </dd>
-              </div>
-
-              <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                <dt className="font-semibold text-gray-900">
-                  <div className='flex items-center'>
-                    <MagnifyingGlassCircleIcon className="h-5 w-5 inline-block mr-2" />
-                    type
-                  </div>
-                </dt>
-                <dd className="text-gray-700 sm:col-span-2 flex">{pokemonData.types.map(type =>
-                  <div key={type.type.name} className='flex me-4 p-2 rounded' style={{ backgroundColor: typeColors[type.type.name] }}>
-                    <img
-                      key={type.type.name}
-                      src={getTypeIconURL(type.type.name)}
-                      alt={`${type.type.name} type`}
-                      className="h-6 w-6"
-
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+            {/* Header section with name, buttons, and form selector */}
+            <div className="col-span-6 flex justify-between items-center mb-4">
+              <div className="flex items-center">
+                <h2 className="text-2xl font-bold text-gray-800 mr-4">{pokemonData.name}</h2>
+                {audioSrc && (
+                  <div className="flex justify-center items-center mr-2">
+                    <SpeakerWaveIcon
+                      className={`h-6 w-6 text-gray-500 cursor-pointer ${isPlaying ? 'text-green-500' : ''}`}
+                      onClick={toggleAudio}
                     />
-                    <p className='mx-2 text-white'>{type.type.name}</p>
+                    <audio ref={audioRef} controls style={{ display: 'none' }} onEnded={() => setIsPlaying(false)}>
+                      <source src={audioSrc} type="audio/mpeg" />
+                      Your browser doesn't support the audio element.
+                    </audio>
                   </div>
-                )}</dd>
+                )}
+                <StarIcon
+                  className={`h-6 w-6 cursor-pointer ${isShiny ? 'text-yellow-400' : 'text-gray-500'}`}
+                  onClick={toggleShiny}
+                />
               </div>
+              {forms.length > 1 && (
+                <select 
+                  value={formId || forms.find(f => f.is_default)?.pokemon.name}
+                  onChange={(e) => {
+                    const selectedForm = e.target.value;
+                    const isBaseForm = selectedForm === forms.find(f => f.is_default)?.pokemon.name;
+                    navigate(`/gen/${genId}/${pokeId}${isBaseForm ? '' : `/${selectedForm}`}`);
+                  }}
+                  className="p-2 border rounded"
+                >
+                  {forms.map((form) => (
+                    <option key={form.pokemon.name} value={form.pokemon.name}>
+                      {form.pokemon.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
 
-              <div className="grid grid-cols-1 gap-1 pt-3 sm:grid-cols-3 sm:gap-4">
-                <dt className="font-semibold text-gray-900">
-                  <div className='flex items-center'>
-                    <ShieldExclamationIcon className="h-5 w-5 inline-block mr-2" />
-                    defenses
+            {/* Pokemon image */}
+            <div className='flex flex-col items-center md:items-start col-span-6 md:col-span-2 md:row-start-2'>
+              <div className='w-full flex justify-center relative group items-center'>
+                <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 inset-10 bg-gradient-to-r ${typeGradientColors[pokemonData.types[0].type.name].from} ${pokemonData.types.length > 1 ? typeGradientColors[pokemonData.types[1].type.name].to : typeGradientColors[pokemonData.types[0].type.name].to}
+                  rounded-full blur-xl opacity-40 group-hover:opacity-80 transition duration-2000 animate-pulse `}></div>
+                <img
+                  className="relative w-auto h-56 p-4"
+                  src={isShiny ? pokemonData.sprites.other.home.front_shiny : pokemonData.sprites.other.home.front_default}
+                  alt={pokemonData.name}
+                  onMouseOver={e => (e.currentTarget.src = isShiny ? (pokemonData.sprites.other.showdown.front_shiny || pokemonData.sprites.other["official-artwork"].front_shiny)
+                    : pokemonData.sprites.other.showdown.front_default || pokemonData.sprites.other["official-artwork"].front_default)}
+                  onMouseOut={e => (e.currentTarget.src = isShiny ? pokemonData.sprites.other.home.front_shiny : pokemonData.sprites.other.home.front_default)}
+                />
+              </div>
+            </div>
+
+            {/* Details Table */}
+            <div className="col-span-6 md:col-span-4 md:col-start-3 md:row-start-2 relative">
+              <dl className="divide-y divide-gray-100 text-sm bg-white border border-gray-200 p-4 rounded">
+                {versionGroups && speciesData && uniqueDescriptions.length > 0 && (
+                  <div className="grid grid-cols-1 gap-1 pb-3 sm:grid-cols-3 sm:gap-4 relative">
+                    <dt className="font-semibold text-gray-900 items-center">
+                      <div className='flex items-center'>
+                        <InformationCircleIcon className="h-5 w-5 inline-block mr-2" />
+                        description
+                      </div>
+                      <p className="text-sm ms-7">
+                        {uniqueDescriptions[currentSlideIndex]?.version_names.split('/').map((version, index) => (
+                          <span
+                            className='inline-block'
+                            key={index}
+                            style={{ color: gameColors[version.toLowerCase()] }}
+                          >
+                            {version}
+                            {index < uniqueDescriptions[currentSlideIndex]?.version_names.split('/').length - 1 ? '/' : ''}
+                          </span>
+                        ))}
+                      </p>
+                    </dt>
+                    <dd className="text-gray-700 sm:col-span-2">
+                      <Slider {...sliderSettings}>
+                        {getUniqueDescriptions(speciesData.flavor_text_entries).map((entry, index) => (
+                          <div key={index}>
+                            <p>{entry.flavor_text}</p>
+                          </div>
+                        ))}
+                      </Slider>
+                    </dd>
                   </div>
-                </dt>
-                <dd className="text-gray-700 sm:col-span-2 flex flex-wrap">
-                  {weaknessData &&
-                    Object.entries(weaknessData)
-                      .sort(([, a], [, b]) => {
-                        if (a === 0) return 1;
-                        if (b === 0) return -1;
-                        return b - a;
-                      })
-                      .map(([type, multiplier]) => (
-                        <div
-                          key={type}
-                          className="flex items-center mr-4 mb-2 p-2 rounded"
-                          style={{ backgroundColor: typeColors[type] }}
+                )}
+                <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+                  <dt className="font-semibold text-gray-900">
+                    <div className='flex items-center'>
+                      <ChartBarSquareIcon className="h-5 w-5 inline-block mr-2" />
+                      height
+                    </div>
+                  </dt>
+                  <dd className="text-gray-700 sm:col-span-2">{(pokemonData.height * 0.1).toFixed(2)} meters</dd>
+                </div>
+
+                <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+                  <dt className="font-semibold text-gray-900">
+                    <div className='flex items-center'>
+                      <ScaleIcon className="h-5 w-5 inline-block mr-2" />
+                      weight
+                    </div>
+                  </dt>
+                  <dd className="text-gray-700 sm:col-span-2">{(pokemonData.weight * 0.1).toFixed(2)} kilograms</dd>
+                </div>
+
+                <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+                  <dt className="font-semibold text-gray-900">
+                    <div className='flex items-center'>
+                      <LightBulbIcon className="h-5 w-5 inline-block mr-2" />
+                      abilities
+                    </div>
+                  </dt>
+                  <dd className="text-gray-700 sm:col-span-2 flex flex-wrap">
+                    {pokemonData.abilities.map((a) => (
+                      <div
+                        key={a.ability.name}
+                        className="mr-2 mb-2"
+                        data-tooltip-id="ability-tooltip"
+                        data-tooltip-content={abilityDescriptions[a.ability.name]}
+                      >
+                        <button
+                          className={`px-3 py-1 rounded ${a.is_hidden ? 'bg-black text-white' : 'bg-gray-200 text-gray-800'
+                            }`}
                         >
-                          <img
-                            src={getTypeIconURL(type)}
-                            alt={`${type} type`}
-                            className="h-6 w-6"
-                          />
-                          <p className="mx-2 text-white">
-                            {multiplier === 0 ? 'Immune' : `${multiplier}x`}
-                          </p>
-                        </div>
-                      ))}
-                </dd>
-              </div>
-            </dl>
-          </div>
-
-          <div className='col-span-6 row-span-2 flex flex-col md:flex-row mt-4'>
-            <div className="w-full md:w-1/2 pr-0 md:pr-2">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">stats</h2>
-              <dl className="divide-y divide-gray-100 text-sm">
-                <div className="grid grid-cols-3 gap-1 py-3 sm:gap-4">
-                  <dd className="text-gray-700 col-span-3 space-y-4 border border-gray-200 p-4 rounded">
-                    {pokemonData.stats.map((stat) => (
-                      <div key={stat.stat.name}>
-                        <div className="flex justify-between">
-                          <span className="mb-2">{stat.stat.name}</span>
-                          <span>{stat.base_stat}</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                          <div
-                            className="bg-black h-2.5 rounded-full progress-bar"
-                            style={{ '--progress-width': `${(stat.base_stat / 255) * 100}%` }}
-                          ></div>
-                        </div>
+                          {a.ability.name} {a.is_hidden && <span>*</span>}
+                        </button>
                       </div>
                     ))}
                   </dd>
                 </div>
-              </dl>
-            </div>
-
-            <div className="w-full md:w-1/2 mt-4 md:mt-0 md:pl-2">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">attributes</h2>
-              <dl className="divide-y divide-gray-100 text-sm bg-white border border-gray-200 p-4 rounded">
-                {speciesData.habitat && (
-                  <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                    <dt className="font-semibold text-gray-900">habitat</dt>
-                    <dd className="text-gray-700 sm:col-span-2">{speciesData.habitat.name}</dd>
-                  </div>
-                )}
 
                 <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                  <dt className="font-semibold text-gray-900">capture rate</dt>
-                  <dd className="text-gray-700 sm:col-span-2">{speciesData.capture_rate}</dd>
+                  <dt className="font-semibold text-gray-900">
+                    <div className='flex items-center'>
+                      <MagnifyingGlassCircleIcon className="h-5 w-5 inline-block mr-2" />
+                      type
+                    </div>
+                  </dt>
+                  <dd className="text-gray-700 sm:col-span-2 flex">{pokemonData.types.map(type =>
+                    <div key={type.type.name} className='flex me-4 p-2 rounded' style={{ backgroundColor: typeColors[type.type.name] }}>
+                      <img
+                        key={type.type.name}
+                        src={getTypeIconURL(type.type.name)}
+                        alt={`${type.type.name} type`}
+                        className="h-6 w-6"
+
+                      />
+                      <p className='mx-2 text-white'>{type.type.name}</p>
+                    </div>
+                  )}</dd>
                 </div>
 
-                <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                  <dt className="font-semibold text-gray-900">growth rate</dt>
-                  <dd className="text-gray-700 sm:col-span-2">{speciesData.growth_rate.name}</dd>
-                </div>
-
-                <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                  <dt className="font-semibold text-gray-900">EV yield</dt>
-                  <dd className="text-gray-700 sm:col-span-2">{evYield}</dd>
-                </div>
-
-                <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                  <dt className="font-semibold text-gray-900">base exp</dt>
-                  <dd className="text-gray-700 sm:col-span-2">{pokemonData.base_experience}</dd>
-                </div>
-
-                <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                  <dt className="font-semibold text-gray-900">base happiness</dt>
-                  <dd className="text-gray-700 sm:col-span-2">{speciesData.base_happiness}</dd>
-                </div>
-              </dl>
-
-              <h2 className="text-2xl font-bold text-gray-800 mb-2 mt-6">breeding</h2>
-              <dl className="divide-y divide-gray-100 text-sm bg-white border border-gray-200 p-4 rounded">
-                <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                  <dt className="font-semibold text-gray-900">egg groups</dt>
-                  <dd className="text-gray-700 sm:col-span-2">
-                    {speciesData.egg_groups.map(group => group.name).join(', ')}
+                <div className="grid grid-cols-1 gap-1 pt-3 sm:grid-cols-3 sm:gap-4">
+                  <dt className="font-semibold text-gray-900">
+                    <div className='flex items-center'>
+                      <ShieldExclamationIcon className="h-5 w-5 inline-block mr-2" />
+                      defenses
+                    </div>
+                  </dt>
+                  <dd className="text-gray-700 sm:col-span-2 flex flex-wrap">
+                    {weaknessData &&
+                      Object.entries(weaknessData)
+                        .sort(([, a], [, b]) => {
+                          if (a === 0) return 1;
+                          if (b === 0) return -1;
+                          return b - a;
+                        })
+                        .map(([type, multiplier]) => (
+                          <div
+                            key={type}
+                            className="flex items-center mr-4 mb-2 p-2 rounded"
+                            style={{ backgroundColor: typeColors[type] }}
+                          >
+                            <img
+                              src={getTypeIconURL(type)}
+                              alt={`${type} type`}
+                              className="h-6 w-6"
+                            />
+                            <p className="mx-2 text-white">
+                              {multiplier === 0 ? 'Immune' : `${multiplier}x`}
+                            </p>
+                          </div>
+                        ))}
                   </dd>
                 </div>
-
-                <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                  <dt className="font-semibold text-gray-900">egg cycle</dt>
-                  <dd className="text-gray-700 sm:col-span-2">{speciesData.hatch_counter * 255} steps</dd>
-                </div>
               </dl>
             </div>
-          </div>
 
-          <div className='col-span-6 row-span-3 row-start-5 mt-8 flex flex-col'>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">evolutions</h2>
-            {evoChain.chain.evolves_to.length == 0 && <p className='mb-4'> this pokemon does not evolve. </p>}
-            <EvolutionTree evolution={evoChain} />
-          </div>
+            {/* Info Table */}
+            <div className='col-span-6 row-start-4 flex flex-col md:flex-row mt-4'>
+              <div className="w-full md:w-1/2 pr-0 md:pr-2">
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">stats</h2>
+                <dl className="divide-y divide-gray-100 text-sm">
+                  <div className="grid grid-cols-3 gap-1 py-3 sm:gap-4">
+                    <dd className="text-gray-700 col-span-3 space-y-4 border border-gray-200 p-4 rounded">
+                      {pokemonData.stats.map((stat) => (
+                        <div key={stat.stat.name}>
+                          <div className="flex justify-between">
+                            <span className="font-semibold text-gray-900 mb-2">{stat.stat.name}</span>
+                            <span>{stat.base_stat}</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                            <div
+                              className="bg-black h-2.5 rounded-full progress-bar"
+                              style={{ '--progress-width': `${(stat.base_stat / 255) * 100}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      ))}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
 
-          <div className='col-span-6 row-span-3 row-start-8 mt-8 flex flex-col'>
-            <MoveSetTable
-              moves={pokemonData.moves}
-              versionGroups={versionGroups}
-              selectedVersionGroup={selectedVersionGroup}
-              onVersionGroupChange={setSelectedVersionGroup}
-            />
-          </div>
+              <div className="w-full md:w-1/2 mt-4 md:mt-0 md:pl-2">
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">attributes</h2>
+                <dl className="divide-y divide-gray-100 text-sm bg-white border border-gray-200 p-4 rounded">
+                  {speciesData.habitat && (
+                    <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+                      <dt className="font-semibold text-gray-900">habitat</dt>
+                      <dd className="text-gray-700 sm:col-span-2">{speciesData.habitat.name}</dd>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+                    <dt className="font-semibold text-gray-900">capture rate</dt>
+                    <dd className="text-gray-700 sm:col-span-2">{speciesData.capture_rate}</dd>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+                    <dt className="font-semibold text-gray-900">growth rate</dt>
+                    <dd className="text-gray-700 sm:col-span-2">{speciesData.growth_rate.name}</dd>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+                    <dt className="font-semibold text-gray-900">EV yield</dt>
+                    <dd className="text-gray-700 sm:col-span-2">{evYield}</dd>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+                    <dt className="font-semibold text-gray-900">base exp</dt>
+                    <dd className="text-gray-700 sm:col-span-2">{pokemonData.base_experience}</dd>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+                    <dt className="font-semibold text-gray-900">base happiness</dt>
+                    <dd className="text-gray-700 sm:col-span-2">{speciesData.base_happiness}</dd>
+                  </div>
+                </dl>
+
+                <h2 className="text-2xl font-bold text-gray-800 mb-2 mt-6">breeding</h2>
+                <dl className="divide-y divide-gray-100 text-sm bg-white border border-gray-200 p-4 rounded">
+                  <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+                    <dt className="font-semibold text-gray-900">egg groups</dt>
+                    <dd className="text-gray-700 sm:col-span-2">
+                      {speciesData.egg_groups.map(group => group.name).join(', ')}
+                    </dd>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+                    <dt className="font-semibold text-gray-900">egg cycle</dt>
+                    <dd className="text-gray-700 sm:col-span-2">{speciesData.hatch_counter * 255} steps</dd>
+                  </div>
+                </dl>
+              </div>
+            </div>
+
+            {/* Evo Tree */}
+            <div className='col-span-6 row-start-5 mt-8 flex flex-col'>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">evolutions</h2>
+              {evoChain.chain.evolves_to.length == 0 && <p className='mb-4'> this pokemon does not evolve. </p>}
+              <EvolutionTree evolution={evoChain} />
+            </div>
+
+            {/* Moveset Table */}
+            <div className='col-span-6 row-start-6 mt-8 flex flex-col'>
+              <MoveSetTable
+                moves={pokemonData.moves}
+                versionGroups={versionGroups}
+                selectedVersionGroup={selectedVersionGroup}
+                onVersionGroupChange={setSelectedVersionGroup}
+              />
+            </div>
 
         </div>
       )}
