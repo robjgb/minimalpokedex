@@ -90,3 +90,16 @@
     word-wrap: break-word; /* Break long words if necessary */
     z-index: 9999;
   }
+
+  @keyframes growProgress {
+    0% {
+      width:0
+    }
+    to {
+      width:var(--progress-width)
+    }
+  }
+  .progress-bar {
+    animation:growProgress 1s ease-in-out forwards
+  }
+
